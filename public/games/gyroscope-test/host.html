@@ -600,6 +600,24 @@
             <span class="metrics">α${o.alpha.toFixed(0)}° β${o.beta.toFixed(0)}° γ${o.gamma.toFixed(0)}° · x${m.x.toFixed(1)} y${m.y.toFixed(1)} z${m.z.toFixed(1)}</span>
           </div>`;
       }).join('');
+
+      // In local preview mode there are no real PeerJS "join"/"orientation"
+      // messages to build the Players grid from, so mirror the raw device
+      // feed into `players` directly (same pattern as trail-blazer/sensor-
+      // skeleton) — this is what actually drives "Waiting for players" and
+      // round logic below.
+      if (!isLocalPreview()) return;
+      let changed = false;
+      deviceList.forEach((d) => {
+        const peerId = d.deviceId;
+        const o = d.orientation || { alpha: 0, beta: 0, gamma: 0 };
+        if (!players[peerId]) {
+          players[peerId] = { name: d.name || 'Player', angle: { roll: 0, pitch: 0, yaw: 0 }, committed: false, commitTime: null, commitAngle: null };
+          changed = true;
+        }
+        players[peerId].angle = { roll: o.gamma, pitch: o.beta, yaw: o.alpha };
+      });
+      if (changed) updateUI();
     }
 
     function updateRoomPlayerCount() {

@@ -40,6 +40,7 @@ function getPeerConfig() {
   return {
     host: location.hostname,
     port: parseInt(location.port) || (location.protocol === 'https:' ? 443 : 80),
+    secure: location.protocol === 'https:',
     path: '/peerjs',
     debug: 0
   };

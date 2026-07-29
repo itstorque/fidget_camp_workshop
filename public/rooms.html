@@ -90,11 +90,6 @@
     const GAME_ID = params.get('game') || 'gyroscope-test';
 
     const GAME_META = {
-      'instrument-symphony': {
-        name: '🎼 Instrument Symphony',
-        hostPath: '/games/instrument-symphony/host.html',
-        playPath: '/games/instrument-symphony/play.html'
-      },
       'gyroscope-test': {
         name: '🎯 Gyroscope Test',
         hostPath: '/games/gyroscope-test/host.html',
@@ -129,20 +124,16 @@
     let autoRefreshTimer = null;
 
     async function loadRooms() {
-      // In local preview mode there's no real host peer running locally, so
-      // joining a remote room as a "player" wouldn't work anyway. Instead,
-      // always offer a synthetic dev room that drops straight into this
-      // game's host screen, which already streams every device from
-      // /api/devices/all with no room/player setup required.
-      if (isLocalPreview()) {
-        renderRooms([{ roomId: 'DEV', name: '🧪 Local Dev Room', playerCount: 0, isDev: true }]);
-        return;
-      }
       try {
         const res = await fetch(apiUrl(`/api/rooms?game=${encodeURIComponent(GAME_ID)}`));
         if (!res.ok) throw new Error('Bad response');
         const rooms = await res.json();
-        renderRooms(rooms);
+        // In local preview mode, also offer a synthetic dev room that drops
+        // straight into this game's host screen (streaming every device via
+        // /api/devices/all) alongside any real rooms open on the remote server.
+        renderRooms(isLocalPreview()
+          ? [{ roomId: 'DEV', name: '🧪 Local Dev Room', playerCount: 0, isDev: true }, ...rooms]
+          : rooms);
       } catch (e) {
         document.getElementById('rooms-container').innerHTML = `
           <div class="error-state">
