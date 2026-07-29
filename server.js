@@ -4,6 +4,32 @@ const { ExpressPeerServer } = require('peer');
 
 const app = express();
 app.use(express.json());
+
+// --- Local dev mode: point client API/PeerJS calls at the deployed Render
+// server instead of this local instance, so you can preview games with
+// real room/player data while developing locally.
+//   npm start           -> uses this server's own API (default)
+//   npm start -- --local -> client queries REMOTE_API_BASE instead
+const USE_REMOTE_API = process.argv.includes('--local') || process.env.USE_REMOTE_API === 'true';
+const REMOTE_API_BASE = process.env.REMOTE_API_BASE || 'https://fidget-camp-workshop.onrender.com';
+
+app.get('/config.js', (req, res) => {
+  res.type('application/javascript');
+  res.send(`window.API_BASE = ${JSON.stringify(USE_REMOTE_API ? REMOTE_API_BASE : '')};`);
+});
+
+// Allow cross-origin requests to the API so a locally-running instance in
+// --local mode can fetch rooms/devices from this server when it's the
+// deployed (Render) target. Only /api/* is opened up; static pages and
+// PeerJS's own CORS handling are unaffected.
+app.use('/api', (req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Pretty routes for static pages
@@ -139,10 +165,22 @@ app.get('/api/devices/:room', (req, res) => {
 const PORT = process.env.PORT || 3000;
 const server = app.listen(PORT, () => {
   console.log(`\n🌀 Sensor Games running at http://localhost:${PORT}`);
-  console.log(`   For mobile testing on local network, use your machine's IP address.\n`);
+  console.log(`   For mobile testing on local network, use your machine's IP address.`);
+  if (USE_REMOTE_API) {
+    console.log(`   --local: client API/PeerJS calls point at ${REMOTE_API_BASE}\n`);
+  } else {
+    console.log('');
+  }
 });
 
 // --- PeerJS server (mounted at /peerjs) ---
+app.use('/peerjs', (req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
 const peerServer = ExpressPeerServer(server, {
   debug: false,
   allow_discovery: false

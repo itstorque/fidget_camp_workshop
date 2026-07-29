@@ -224,6 +224,13 @@
         the server. The host screen polls the server and renders a live scrolling chart per player.
         Use this as a template for building new sensor-driven games.
       </p>
+      <h3>🐾 Trail Blazer</h3>
+      <p>
+        Everyone starts at the host's origin on a shared canvas. Each player's phone streams raw
+        accelerometer data; the host integrates it into a 2D walking velocity/position per player
+        (with damping so it settles instead of drifting) and draws a colored trail behind each dot.
+        The camera smoothly pans and zooms out to keep the host origin and every walker in view.
+      </p>
     </section>
 
     <section class="doc-section">
@@ -241,7 +248,11 @@
         <code>https://</code> or <code>http://localhost</code>. Testing over a plain LAN IP
         (e.g. <code>http://192.168.1.20:3000</code>) will silently skip the permission prompt and no sensor
         data will flow. Use a tunnel such as <a href="https://ngrok.com" style="color:#ffb37f">ngrok</a>
-        (<code>ngrok http 3000</code>) to get an HTTPS URL for phone testing.
+        (<code>ngrok http 3000</code>) to get an HTTPS URL for phone testing, or deploy the app (e.g. to
+        <a href="https://render.com" style="color:#ffb37f">Render</a>) which serves everything over HTTPS
+        already. All API and PeerJS calls use relative paths / <code>location.hostname</code>, so no code
+        changes are needed — the same site works unmodified at any host, including
+        <code>https://fidget-camp-workshop.onrender.com</code>.
       </div>
     </section>
 

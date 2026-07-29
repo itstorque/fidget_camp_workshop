@@ -80,6 +80,8 @@
     </div>
   </div>
 
+  <script src="/config.js"></script>
+  <script src="/js/api-config.js"></script>
   <script>
     // =====================
     // INIT
@@ -102,6 +104,11 @@
         name: '📊 Sensor Skeleton',
         hostPath: '/games/sensor-skeleton/host.html',
         playPath: '/games/sensor-skeleton/play.html'
+      },
+      'trail-blazer': {
+        name: '🐾 Trail Blazer',
+        hostPath: '/games/trail-blazer/host.html',
+        playPath: '/games/trail-blazer/play.html'
       }
     };
 
@@ -123,7 +130,7 @@
 
     async function loadRooms() {
       try {
-        const res = await fetch(`/api/rooms?game=${encodeURIComponent(GAME_ID)}`);
+        const res = await fetch(apiUrl(`/api/rooms?game=${encodeURIComponent(GAME_ID)}`));
         if (!res.ok) throw new Error('Bad response');
         const rooms = await res.json();
         renderRooms(rooms);

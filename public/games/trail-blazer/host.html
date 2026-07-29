@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>🐾 Trail Blazer — Host</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    html, body { height: 100%; overflow: hidden; background: #0a0a0a; }
+    .app { max-width: none; height: 100%; }
+
+    .host-header {
+      background: #1a1a1a;
+      color: white;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      border-bottom: 1px solid #333;
+      flex-shrink: 0;
+    }
+
+    .host-title-block { display: flex; flex-direction: column; }
+    .host-game-title { font-size: 13px; font-weight: 700; opacity: 0.7; }
+    .host-room-name { font-size: 18px; font-weight: 900; }
+
+    .room-code {
+      background: rgba(96,165,250,0.15);
+      border-radius: 12px;
+      padding: 6px 16px;
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: 0.1em;
+      font-variant-numeric: tabular-nums;
+      color: #60a5fa;
+      white-space: nowrap;
+    }
+
+    .host-status-badge {
+      background: rgba(96,165,250,0.15);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #60a5fa;
+      white-space: nowrap;
+    }
+
+    #trail-canvas {
+      display: block;
+      width: 100%;
+      flex: 1;
+      min-height: 0;
+      background: #0a0a0a;
+    }
+
+    .game-controls {
+      padding: 10px 16px;
+      padding-bottom: max(10px, env(safe-area-inset-bottom));
+      background: #1a1a1a;
+      border-top: 1px solid #333;
+      display: flex;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .game-controls .btn { flex: 1; text-align: center; text-decoration: none; }
+
+    body, .app { display: flex; flex-direction: column; }
+    #main-ui { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+  </style>
+</head>
+<body>
+
+  <!-- Setup overlay -->
+  <div class="overlay center" id="setup-overlay">
+    <div class="overlay-card">
+      <span class="overlay-icon">🐾</span>
+      <h2 class="overlay-title">Host a Room</h2>
+      <p class="overlay-desc">Set up your <strong>Trail Blazer</strong> room.</p>
+      <input type="text" class="text-input" id="room-name-input" placeholder="Room name" maxlength="40" value="My Room">
+      <button class="btn" style="width:100%" id="create-room-btn">Create Room 🚀</button>
+    </div>
+  </div>
+
+  <!-- Main UI -->
+  <div id="main-ui" class="hidden">
+
+    <div class="host-header">
+      <div class="host-title-block">
+        <div class="host-game-title">🐾 Trail Blazer</div>
+        <div class="host-room-name" id="room-name-display">—</div>
+      </div>
+      <div class="room-code" id="room-code">——</div>
+      <div class="host-status-badge" id="status-badge">⏳ Waiting</div>
+    </div>
+
+    <canvas id="trail-canvas"></canvas>
+
+    <div class="game-controls">
+      <button class="btn btn-ghost" id="clear-btn">🧹 Clear Trails</button>
+      <a href="/rooms?game=trail-blazer" class="btn btn-ghost">← Lobby</a>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <script src="/config.js"></script>
+  <script src="/js/api-config.js"></script>
+  <script src="/js/device-stream.js"></script>
+  <script>
+    const GAME_ID = 'trail-blazer';
+
+    // Tunables for the tilt-to-walk mechanic. Velocity is driven directly
+    // from device *orientation* (tilt angle) rather than double-integrating
+    // noisy, gravity-contaminated accelerometer force into position — tilt
+    // returning to neutral always brings velocity back to zero, so there's
+    // no runaway drift.
+    const TILT_DEADZONE_DEG = 4;     // ignore tiny tilt jitter around neutral
+    const MAX_TILT_DEG = 35;         // tilt angle (past deadzone) for full speed
+    const WALK_SPEED = 220;          // world units/sec at max tilt
+    const VELOCITY_SMOOTHING = 0.25; // EMA factor applied to velocity (0-1, higher = snappier)
+    const MAX_DT = 0.5;              // clamp big gaps (tab backgrounded, etc)
+    const TRAIL_MAX_POINTS = 4000;
+
+    // Soft "leash" around the origin: no pull-back at all inside
+    // SOFT_RADIUS, then an inward pull that grows with the *square* of how
+    // far past that radius a walker has strayed, so it starts gentle and
+    // rapidly overwhelms outward walking speed as they approach MAX_RADIUS.
+    const SOFT_RADIUS = 260;         // world units of free roaming, no pull
+    const MAX_RADIUS = 420;          // world units where pull overwhelms walking
+    const PULL_STRENGTH = WALK_SPEED * 2.2; // world units/sec^2 at MAX_RADIUS edge
+
+    // The calibrated "neutral" tilt slowly drifts toward whatever tilt the
+    // player is currently holding (a lossy/decaying memory of "neutral"),
+    // so small long-term posture changes re-center instead of permanently
+    // biasing movement. Expressed as a per-second recentering rate.
+    const BASELINE_RECENTER_RATE = 0.03; // fraction of the gap closed per second
+    const WORLD_PADDING = 220;   // min world-units of breathing room around content
+    const MIN_SCALE = 0.05;      // pixels-per-world-unit when fully zoomed out
+    const MAX_SCALE = 3.5;       // pixels-per-world-unit when fully zoomed in
+    const CAMERA_SMOOTHING = 0.06;
+    const DOT_RADIUS = 14;       // screen px, constant regardless of zoom
+    const TRAIL_WIDTH = 4;       // screen px, constant regardless of zoom
+
+    const COLORS = ['#f87171', '#4ade80', '#60a5fa', '#fbbf24', '#a78bfa', '#fb923c', '#f472b6', '#34d399'];
+
+    let peer = null, roomId = null, roomName = '';
+    const connections = {}, players = {}; // peerId -> { name, colorIdx }
+    const walkers = {}; // peerId -> { pos, vel, trail, lastT }
+    let colorCounter = 0;
+    let devicePollHandle = null;
+
+    // In local preview mode there's no point waiting for a room/players — just
+    // stream every device across the remote server immediately.
+    if (isLocalPreview()) {
+      devicePollHandle = pollRoomDevices(null, onDevices, 100);
+      document.getElementById('setup-overlay').classList.add('hidden');
+      document.getElementById('main-ui').classList.remove('hidden');
+      document.getElementById('room-name-display').textContent = 'Local Preview';
+      document.getElementById('room-code').textContent = 'ALL';
+      resizeCanvas();
+      requestAnimationFrame(renderLoop);
+    }
+
+    // Smoothed camera state (world-space center + pixels-per-world-unit scale)
+    const camera = { x: 0, y: 0, scale: 1, targetX: 0, targetY: 0, targetScale: 1 };
+
+    const canvas = document.getElementById('trail-canvas');
+    const ctx = canvas.getContext('2d');
+
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.max(1, rect.width * dpr);
+      canvas.height = Math.max(1, rect.height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    function initPeer(onReady) {
+      const peerConfig = getPeerConfig();
+      peer = new Peer(undefined, peerConfig);
+      peer.on('open', (id) => onReady(id));
+      peer.on('connection', handleNewConnection);
+      peer.on('error', (err) => {
+        console.warn('PeerJS error:', err.type);
+        peer.destroy();
+        peer = new Peer(undefined, { debug: 0 });
+        peer.on('open', (id) => onReady(id));
+        peer.on('connection', handleNewConnection);
+      });
+    }
+
+    function handleNewConnection(conn) {
+      conn.on('open', () => {
+        connections[conn.peer] = conn;
+        conn.on('data', (data) => handlePlayerMsg(conn.peer, data));
+        conn.on('close', () => onPlayerLeft(conn.peer));
+        conn.on('error', () => onPlayerLeft(conn.peer));
+      });
+    }
+
+    function onPlayerLeft(peerId) {
+      delete players[peerId];
+      delete connections[peerId];
+      delete walkers[peerId];
+      updateStatus();
+      updateRoomPlayerCount();
+    }
+
+    function handlePlayerMsg(peerId, data) {
+      if (data.type === 'join') {
+        const name = String(data.name || 'Anonymous').slice(0, 24);
+        players[peerId] = { name, colorIdx: colorCounter++ };
+        updateStatus();
+        updateRoomPlayerCount();
+      }
+    }
+
+    async function createRoom(hostPeerId) {
+      roomName = document.getElementById('room-name-input').value.trim() || 'My Room';
+      try {
+        const res = await fetch(apiUrl('/api/rooms'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: roomName, game: GAME_ID, hostPeerId })
+        });
+        const data = await res.json();
+        roomId = data.roomId;
+        onRoomCreated();
+      } catch (e) {
+        alert('Error: ' + e.message);
+        document.getElementById('create-room-btn').textContent = 'Create Room 🚀';
+        document.getElementById('create-room-btn').disabled = false;
+      }
+    }
+
+    function onRoomCreated() {
+      document.getElementById('setup-overlay').classList.add('hidden');
+      document.getElementById('main-ui').classList.remove('hidden');
+      document.getElementById('room-name-display').textContent = roomName;
+      document.getElementById('room-code').textContent = roomId;
+      resizeCanvas();
+
+      setInterval(updateRoomPlayerCount, 15000);
+      window.addEventListener('beforeunload', () => {
+        fetch(apiUrl(`/api/rooms/${roomId}`), { method: 'DELETE', keepalive: true }).catch(() => {});
+      });
+
+      devicePollHandle = devicePollHandle || pollRoomDevices(roomId, onDevices, 100);
+      requestAnimationFrame(renderLoop);
+    }
+
+    function updateRoomPlayerCount() {
+      if (!roomId) return;
+      fetch(apiUrl(`/api/rooms/${roomId}`), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerCount: Object.keys(players).length })
+      }).catch(() => {});
+    }
+
+    function updateStatus() {
+      const count = Object.keys(players).length;
+      document.getElementById('status-badge').textContent =
+        count === 0 ? '⏳ Waiting for players' :
+        count === 1 ? '👤 1 walker' :
+        `👥 ${count} walkers`;
+    }
+
+    // Devices are keyed by deviceId, which play.html sets to its own PeerJS
+    // id, so we can map straight back to the `players` entry created on join.
+    function onDevices(deviceList) {
+      const now = performance.now();
+      (deviceList || []).forEach((d) => {
+        const peerId = d.deviceId;
+        if (!players[peerId]) {
+          players[peerId] = { name: d.name || 'Player', colorIdx: colorCounter++ };
+          updateStatus();
+        }
+        let w = walkers[peerId];
+        if (!w) {
+          // Spread new walkers out a little so they don't all spawn exactly
+          // on top of the host origin.
+          const angle = Math.random() * Math.PI * 2;
+          w = walkers[peerId] = {
+            pos: { x: Math.cos(angle) * 40, y: Math.sin(angle) * 40 },
+            vel: { x: 0, y: 0 },
+            trail: [],
+            lastT: now,
+            baseline: null // calibrated to this player's starting tilt
+          };
+        }
+
+        const dt = Math.min(MAX_DT, Math.max(0, (now - w.lastT) / 1000));
+        w.lastT = now;
+        if (dt <= 0) return;
+
+        const orientation = d.orientation || { alpha: 0, beta: 0, gamma: 0 };
+        if (!w.baseline) {
+          // Calibrate "neutral" to however the player is holding the phone
+          // when they join, so any comfortable grip works as the resting pose.
+          w.baseline = { beta: orientation.beta, gamma: orientation.gamma };
+        } else {
+          // Lossy memory: slowly recenter "neutral" toward the player's
+          // current tilt, so gradual posture drift over a long session
+          // doesn't permanently bias movement in one direction.
+          const recenter = 1 - Math.pow(1 - BASELINE_RECENTER_RATE, dt);
+          let baselineDBeta = orientation.beta - w.baseline.beta;
+          if (baselineDBeta > 180) baselineDBeta -= 360; else if (baselineDBeta < -180) baselineDBeta += 360;
+          w.baseline.beta += baselineDBeta * recenter;
+          w.baseline.gamma += (orientation.gamma - w.baseline.gamma) * recenter;
+        }
+
+        // Tilt relative to the player's calibrated neutral pose.
+        let dBeta = orientation.beta - w.baseline.beta;
+        let dGamma = orientation.gamma - w.baseline.gamma;
+
+        // Wrap into [-180, 180] in case beta crosses the +/-180 seam.
+        if (dBeta > 180) dBeta -= 360; else if (dBeta < -180) dBeta += 360;
+
+        const applyDeadzone = (deg) => {
+          if (Math.abs(deg) <= TILT_DEADZONE_DEG) return 0;
+          return Math.sign(deg) * (Math.abs(deg) - TILT_DEADZONE_DEG);
+        };
+        dBeta = applyDeadzone(dBeta);
+        dGamma = applyDeadzone(dGamma);
+
+        const range = MAX_TILT_DEG - TILT_DEADZONE_DEG;
+        const normBeta = Math.max(-1, Math.min(1, dBeta / range));
+        const normGamma = Math.max(-1, Math.min(1, dGamma / range));
+
+        // Screen/world convention: +x is right, +y is "up" on the canvas.
+        // Tilting the top of the phone away from the player (positive beta)
+        // means "walk backward" (toward the player), which we map to +y
+        // (down on screen) — i.e. up/down is flipped from the initial mapping.
+        const targetVelX = normGamma * WALK_SPEED;
+        const targetVelY = normBeta * WALK_SPEED;
+
+        // Smooth velocity itself (instead of integrating raw force), so
+        // sensor jitter doesn't turn into visible position jitter, while
+        // still snapping back to zero whenever tilt returns to neutral.
+        w.vel.x += (targetVelX - w.vel.x) * VELOCITY_SMOOTHING;
+        w.vel.y += (targetVelY - w.vel.y) * VELOCITY_SMOOTHING;
+
+        // Square-law leash: beyond SOFT_RADIUS, pull inward with a force
+        // proportional to the square of the overshoot distance, so it starts
+        // as a gentle nudge and rapidly overwhelms outward walking speed as
+        // a walker nears MAX_RADIUS.
+        const dist = Math.hypot(w.pos.x, w.pos.y);
+        if (dist > SOFT_RADIUS) {
+          const overshoot = Math.min(dist - SOFT_RADIUS, MAX_RADIUS - SOFT_RADIUS);
+          const pullRange = MAX_RADIUS - SOFT_RADIUS;
+          const pullAccel = PULL_STRENGTH * Math.pow(overshoot / pullRange, 2);
+          const invDist = 1 / dist;
+          w.vel.x -= w.pos.x * invDist * pullAccel * dt;
+          w.vel.y -= w.pos.y * invDist * pullAccel * dt;
+        }
+
+        w.pos.x += w.vel.x * dt;
+        w.pos.y += w.vel.y * dt;
+
+        w.trail.push({ x: w.pos.x, y: w.pos.y });
+        if (w.trail.length > TRAIL_MAX_POINTS) w.trail.shift();
+      });
+    }
+
+    function computeTargetCamera() {
+      let minX = -WORLD_PADDING, maxX = WORLD_PADDING, minY = -WORLD_PADDING, maxY = WORLD_PADDING;
+      Object.values(walkers).forEach((w) => {
+        minX = Math.min(minX, w.pos.x - WORLD_PADDING * 0.3);
+        maxX = Math.max(maxX, w.pos.x + WORLD_PADDING * 0.3);
+        minY = Math.min(minY, w.pos.y - WORLD_PADDING * 0.3);
+        maxY = Math.max(maxY, w.pos.y + WORLD_PADDING * 0.3);
+      });
+
+      const w = canvas.clientWidth || 1;
+      const h = canvas.clientHeight || 1;
+      const boundW = Math.max(1, maxX - minX);
+      const boundH = Math.max(1, maxY - minY);
+      const scale = Math.min(w / boundW, h / boundH);
+
+      camera.targetX = (minX + maxX) / 2;
+      camera.targetY = (minY + maxY) / 2;
+      camera.targetScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale));
+    }
+
+    function renderLoop() {
+      computeTargetCamera();
+      camera.x += (camera.targetX - camera.x) * CAMERA_SMOOTHING;
+      camera.y += (camera.targetY - camera.y) * CAMERA_SMOOTHING;
+      camera.scale += (camera.targetScale - camera.scale) * CAMERA_SMOOTHING;
+
+      draw();
+      requestAnimationFrame(renderLoop);
+    }
+
+    function draw() {
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      ctx.clearRect(0, 0, w, h);
+
+      // Faint grid for spatial reference
+      drawGrid(w, h);
+
+      ctx.save();
+      ctx.translate(w / 2, h / 2);
+      ctx.scale(camera.scale, camera.scale);
+      ctx.translate(-camera.x, -camera.y);
+
+      // Origin marker (the host)
+      drawOrigin();
+
+      Object.entries(walkers).forEach(([peerId, walker]) => {
+        const player = players[peerId];
+        const color = COLORS[(player?.colorIdx ?? 0) % COLORS.length];
+        drawTrail(walker.trail, color);
+        drawWalker(walker.pos, color, player?.name || 'Player');
+      });
+
+      ctx.restore();
+    }
+
+    function drawGrid(w, h) {
+      const spacing = 60;
+      ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+      ctx.lineWidth = 1;
+      const offsetX = ((w / 2 - camera.x * camera.scale) % spacing + spacing) % spacing;
+      const offsetY = ((h / 2 - camera.y * camera.scale) % spacing + spacing) % spacing;
+      ctx.beginPath();
+      for (let x = offsetX; x < w; x += spacing) { ctx.moveTo(x, 0); ctx.lineTo(x, h); }
+      for (let y = offsetY; y < h; y += spacing) { ctx.moveTo(0, y); ctx.lineTo(w, y); }
+      ctx.stroke();
+    }
+
+    function drawOrigin() {
+      const r = DOT_RADIUS / camera.scale;
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 1.1, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(96,165,250,0.6)';
+      ctx.lineWidth = 2 / camera.scale;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 0.4, 0, Math.PI * 2);
+      ctx.fillStyle = '#60a5fa';
+      ctx.fill();
+
+      ctx.font = `${13 / camera.scale}px Nunito, sans-serif`;
+      ctx.fillStyle = '#60a5fa';
+      ctx.textAlign = 'center';
+      ctx.fillText('🏠 Host', 0, -r * 1.1 - 8 / camera.scale);
+    }
+
+    function drawTrail(trail, color) {
+      if (trail.length < 2) return;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = TRAIL_WIDTH / camera.scale;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.globalAlpha = 0.85;
+      ctx.beginPath();
+      ctx.moveTo(trail[0].x, trail[0].y);
+      for (let i = 1; i < trail.length; i++) ctx.lineTo(trail[i].x, trail[i].y);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+
+    function drawWalker(pos, color, name) {
+      const r = DOT_RADIUS / camera.scale;
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, r, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.lineWidth = 2 / camera.scale;
+      ctx.strokeStyle = '#0a0a0a';
+      ctx.stroke();
+
+      ctx.font = `700 ${13 / camera.scale}px Nunito, sans-serif`;
+      ctx.fillStyle = '#f3f4f6';
+      ctx.textAlign = 'center';
+      ctx.fillText(name, pos.x, pos.y - r - 8 / camera.scale);
+    }
+
+    document.getElementById('clear-btn').addEventListener('click', () => {
+      Object.values(walkers).forEach((w) => { w.trail = []; });
+    });
+
+    document.getElementById('create-room-btn').addEventListener('click', () => {
+      const name = document.getElementById('room-name-input').value.trim();
+      if (!name) { document.getElementById('room-name-input').focus(); return; }
+      const btn = document.getElementById('create-room-btn');
+      btn.textContent = '⏳ Creating...';
+      btn.disabled = true;
+      initPeer((peerId) => createRoom(peerId));
+    });
+
+    document.getElementById('room-name-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('create-room-btn').click();
+    });
+  </script>
+</body>
+</html>

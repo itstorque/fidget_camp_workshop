@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>📊 Sensor Skeleton</title>
+  <title>🐾 Trail Blazer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
@@ -51,64 +51,58 @@
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      gap: 14px;
-      padding: 16px;
-      background: #0a0a0a;
-    }
-
-    .sensor-box {
-      background: #1a1a1a;
-      border-radius: 16px;
-      border: 2px solid #333;
-      padding: 14px;
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      min-height: 0;
-    }
-
-    .sensor-box-header {
-      display: flex;
       align-items: center;
-      justify-content: space-between;
-      margin-bottom: 8px;
+      justify-content: center;
+      gap: 24px;
+      padding: 24px;
+      background: #0a0a0a;
+      text-align: center;
     }
 
-    .sensor-box-title {
-      font-size: 13px;
+    .walk-icon {
+      font-size: 72px;
+      transition: transform 0.15s ease-out;
+    }
+
+    .walk-hint {
+      font-size: 16px;
       font-weight: 800;
       color: #ccc;
-      text-transform: uppercase;
-      letter-spacing: .06em;
+      max-width: 280px;
+      line-height: 1.5;
     }
 
-    .sensor-legend {
-      display: flex;
-      gap: 10px;
-      font-size: 11px;
-      font-weight: 700;
+    .tilt-compass {
+      position: relative;
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      background: #1a1a1a;
+      border: 2px solid #333;
     }
 
-    .legend-item { display: flex; align-items: center; gap: 4px; }
-    .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
-
-    .sensor-values {
-      display: flex;
-      gap: 10px;
-      margin-top: 8px;
-      font-size: 12px;
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
+    .tilt-dot {
+      position: absolute;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #60a5fa;
+      top: 50%;
+      left: 50%;
+      transform: translate(-11px, -11px);
+      box-shadow: 0 0 16px rgba(96,165,250,0.7);
+      transition: transform 0.05s linear;
     }
 
-    .sensor-values span { flex: 1; text-align: center; }
-
-    canvas {
-      width: 100%;
-      flex: 1;
-      min-height: 0;
-      border-radius: 10px;
-      background: #0a0a0a;
+    .tilt-center {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #444;
+      top: 50%;
+      left: 50%;
+      transform: translate(-3px, -3px);
     }
 
     .status-strip {
@@ -131,7 +125,7 @@
   <!-- ======= NAME ENTRY ======= -->
   <div class="overlay center" id="name-overlay">
     <div class="overlay-card">
-      <span class="overlay-icon">📱</span>
+      <span class="overlay-icon">🐾</span>
       <h2 class="overlay-title">Join the Room</h2>
       <p class="overlay-desc">What should we call you?</p>
       <input
@@ -151,11 +145,11 @@
   <!-- ======= MOTION PERMISSION (iOS 13+) ======= -->
   <div class="overlay center hidden" id="permission-overlay">
     <div class="overlay-card">
-      <span class="overlay-icon">📊</span>
+      <span class="overlay-icon">🐾</span>
       <h2 class="overlay-title">Allow Motion?</h2>
       <p class="overlay-desc">
-        This page reads your phone's accelerometer and gyroscope.
-        Please tap <strong>Allow</strong> when prompted.
+        This page reads your phone's accelerometer so tilting it can steer
+        your trail on the host screen. Please tap <strong>Allow</strong> when prompted.
       </p>
       <button class="btn btn-primary btn-full" id="permission-btn">
         Enable Sensors 📱
@@ -175,46 +169,18 @@
   <!-- ======= MAIN PLAY UI ======= -->
   <div class="play-layout hidden" id="play-ui">
     <div class="play-topbar">
-      <span class="play-topbar-title">📊 Sensor Skeleton</span>
+      <span class="play-topbar-title">🐾 Trail Blazer</span>
       <span class="play-topbar-badge" id="topbar-name">You</span>
     </div>
 
     <div class="play-middle">
-      <!-- Accelerometer box -->
-      <div class="sensor-box">
-        <div class="sensor-box-header">
-          <span class="sensor-box-title">📳 Accelerometer</span>
-          <div class="sensor-legend">
-            <span class="legend-item"><span class="legend-dot" style="background:#f87171"></span>X</span>
-            <span class="legend-item"><span class="legend-dot" style="background:#4ade80"></span>Y</span>
-            <span class="legend-item"><span class="legend-dot" style="background:#60a5fa"></span>Z</span>
-          </div>
-        </div>
-        <canvas id="accel-canvas"></canvas>
-        <div class="sensor-values">
-          <span id="accel-x" style="color:#f87171">x: 0.0</span>
-          <span id="accel-y" style="color:#4ade80">y: 0.0</span>
-          <span id="accel-z" style="color:#60a5fa">z: 0.0</span>
-        </div>
+      <span class="walk-icon" id="walk-icon">🚶</span>
+      <div class="tilt-compass">
+        <div class="tilt-center"></div>
+        <div class="tilt-dot" id="tilt-dot"></div>
       </div>
-
-      <!-- Gyroscope box -->
-      <div class="sensor-box">
-        <div class="sensor-box-header">
-          <span class="sensor-box-title">🌀 Gyroscope (orientation)</span>
-          <div class="sensor-legend">
-            <span class="legend-item"><span class="legend-dot" style="background:#fbbf24"></span>α</span>
-            <span class="legend-item"><span class="legend-dot" style="background:#a78bfa"></span>β</span>
-            <span class="legend-item"><span class="legend-dot" style="background:#fb923c"></span>γ</span>
-          </div>
-        </div>
-        <canvas id="gyro-canvas"></canvas>
-        <div class="sensor-values">
-          <span id="gyro-alpha" style="color:#fbbf24">α: 0.0°</span>
-          <span id="gyro-beta" style="color:#a78bfa">β: 0.0°</span>
-          <span id="gyro-gamma" style="color:#fb923c">γ: 0.0°</span>
-        </div>
-      </div>
+      <p class="walk-hint">Tilt your phone in a direction to <strong>walk that way</strong>.
+        However you're holding it right now is "neutral" — look at the host screen to watch your trail!</p>
     </div>
 
     <div class="status-strip" id="status-strip">Waiting for sensor data...</div>
@@ -233,7 +199,7 @@
     const roomId = params.get('room');
 
     if (!hostPeerId || !roomId) {
-      location.href = '/rooms?game=sensor-skeleton';
+      location.href = '/rooms?game=trail-blazer';
     }
 
     // =====================
@@ -243,8 +209,6 @@
     let hostConn = null;
     let playerName = '';
     let deviceStreamHandle = null;
-    let accelPlot = null;
-    let gyroPlot = null;
 
     // =====================
     // PEER INIT (used only to identify this device / notify the host;
@@ -293,7 +257,7 @@
     }
 
     // =====================
-    // SENSOR PERMISSION + LOCAL PLOTTING + STREAMING
+    // SENSOR PERMISSION + STREAMING
     // =====================
     async function requestSensorPermission() {
       const needsMotionPermission = typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function';
@@ -328,43 +292,42 @@
       showOverlay(null);
       document.getElementById('play-ui').classList.remove('hidden');
 
-      accelPlot = createSensorPlot(document.getElementById('accel-canvas'), [
-        { key: 'x', color: '#f87171' },
-        { key: 'y', color: '#4ade80' },
-        { key: 'z', color: '#60a5fa' }
-      ]);
-
-      gyroPlot = createSensorPlot(document.getElementById('gyro-canvas'), [
-        { key: 'alpha', color: '#fbbf24' },
-        { key: 'beta', color: '#a78bfa' },
-        { key: 'gamma', color: '#fb923c' }
-      ]);
-
-      // Streams to the server continuously; onSample fires on every raw
-      // reading so we can plot our own values locally before they're sent.
+      // The host is the single source of truth for position/trails (it
+      // integrates everyone's accelerometer stream into world-space so all
+      // players share one consistent canvas). Here we just stream raw
+      // motion and show a lightweight local tilt indicator for feedback.
       deviceStreamHandle = startDeviceStreaming({
         roomId,
         deviceId: peer.id,
         name: playerName,
-        onSample: (latest) => {
-          accelPlot.push(latest.motion);
-          gyroPlot.push(latest.orientation);
-          updateReadout(latest);
-        }
+        onSample: (latest) => updateTiltIndicator(latest.motion)
       });
 
       const strip = document.getElementById('status-strip');
-      strip.textContent = '🟢 Streaming live to host';
+      strip.textContent = '🟢 Streaming — go for a walk!';
       strip.classList.add('live');
     }
 
-    function updateReadout(latest) {
-      document.getElementById('accel-x').textContent = 'x: ' + latest.motion.x.toFixed(1);
-      document.getElementById('accel-y').textContent = 'y: ' + latest.motion.y.toFixed(1);
-      document.getElementById('accel-z').textContent = 'z: ' + latest.motion.z.toFixed(1);
-      document.getElementById('gyro-alpha').textContent = 'α: ' + latest.orientation.alpha.toFixed(1) + '°';
-      document.getElementById('gyro-beta').textContent = 'β: ' + latest.orientation.beta.toFixed(1) + '°';
-      document.getElementById('gyro-gamma').textContent = 'γ: ' + latest.orientation.gamma.toFixed(1) + '°';
+    // Mirrors the host's tilt-to-velocity mapping (calibrated to whatever
+    // tilt the player starts at) so the local indicator matches actual
+    // in-game movement rather than raw, uncalibrated sensor noise.
+    let tiltBaseline = null;
+    function updateTiltIndicator(orientation) {
+      const beta = orientation?.beta || 0;
+      const gamma = orientation?.gamma || 0;
+      if (!tiltBaseline) tiltBaseline = { beta, gamma };
+
+      let dBeta = beta - tiltBaseline.beta;
+      let dGamma = gamma - tiltBaseline.gamma;
+      if (dBeta > 180) dBeta -= 360; else if (dBeta < -180) dBeta += 360;
+
+      const clamp = (v) => Math.max(-1, Math.min(1, v / 35));
+      const dx = clamp(dGamma) * 55;
+      const dy = clamp(-dBeta) * 55;
+      document.getElementById('tilt-dot').style.transform = `translate(${dx - 11}px, ${dy - 11}px)`;
+
+      const magnitude = Math.sqrt(dBeta * dBeta + dGamma * dGamma);
+      document.getElementById('walk-icon').style.transform = `scale(${1 + Math.min(0.4, magnitude / 40)})`;
     }
 
     window.addEventListener('beforeunload', () => deviceStreamHandle?.stop());

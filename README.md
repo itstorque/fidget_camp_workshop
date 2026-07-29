@@ -14,6 +14,16 @@ Each player gets a random instrument such as brass, drums, keyboard, synth, stri
 
 **Sensors used:** `DeviceMotionEvent` — accelerometer x/y/z and motion magnitude
 
+### Sensor Skeleton *(playable now)*
+A minimal starter/reference game showing the accelerometer + gyroscope streaming pattern with live scrolling charts. Use it as a template for new games.
+
+**Sensors used:** `DeviceMotionEvent` + `DeviceOrientationEvent`
+
+### Trail Blazer *(playable now)*
+Everyone starts at the host's origin on a shared canvas. Tilt your phone to "walk" — the host integrates each player's accelerometer stream into a position and draws a trail behind them. The camera smoothly zooms out to keep everyone in view.
+
+**Sensors used:** `DeviceMotionEvent` — accelerometer x/y integrated into 2D position
+
 ### Coming Soon
 - **Shake Race** — accelerometer speed challenge
 - **Scavenger Snap** — camera + computer vision
@@ -39,6 +49,41 @@ ngrok http 3000
 ```
 
 Share the ngrok URL with players. iOS requires **HTTPS** for `DeviceOrientationEvent` permission — ngrok provides this automatically.
+
+## ☁️ Deploying to Render
+
+The app is fully host-agnostic: every client page talks to `/api/...` and PeerJS using
+relative paths / `location.hostname`, and `server.js` reads `process.env.PORT`. No code
+changes or hardcoded URLs are needed to deploy elsewhere.
+
+1. Push this repo to GitHub and create a new **Web Service** on [Render](https://render.com)
+   pointing at it.
+2. Build command: `npm install`. Start command: `npm start`.
+3. Render provides HTTPS automatically, so `DeviceOrientationEvent`/`DeviceMotionEvent`
+   permissions work out of the box — no ngrok needed.
+4. Once deployed, just open `https://fidget-camp-workshop.onrender.com` on phones/host —
+   the room API, device sensor streaming, and PeerJS signaling all resolve against that
+   same origin automatically.
+
+Note: on Render's free tier the service spins down after inactivity, so the first
+request after idling may take ~30s+ to wake the server back up.
+
+### Previewing games locally against the live Render server
+
+By default `npm start` uses this server's own `/api/...` and `/peerjs` endpoints.
+To instead preview a game locally while its API calls (rooms, live device data,
+PeerJS signaling) hit the deployed `fidget-camp-workshop.onrender.com` server —
+useful for seeing real room/player data with no local players — run:
+
+```bash
+npm run start:local
+```
+
+This starts the local server with a `--local` flag, which serves a small
+`/config.js` that points `window.API_BASE` at the Render URL. All game pages
+read this via `apiUrl()` / `getPeerConfig()` (see `public/js/api-config.js`).
+Override the target with `REMOTE_API_BASE=https://your-app.onrender.com npm run start:local`
+if needed.
 
 ---
 

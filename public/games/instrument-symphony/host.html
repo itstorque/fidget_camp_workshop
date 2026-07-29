@@ -476,6 +476,8 @@
   </div>
 
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <script src="/config.js"></script>
+  <script src="/js/api-config.js"></script>
   <script src="/js/device-stream.js"></script>
   <script>
     const GAME_ID = 'instrument-symphony';
@@ -503,13 +505,21 @@
     let renderQueued = false;
     let devicePollHandle = null;
 
+    // In local preview mode there's no point waiting for a room/players — just
+    // stream every device across the remote server immediately.
+    if (isLocalPreview()) {
+      devicePollHandle = pollRoomDevices(null, renderDeviceFeed);
+      document.getElementById('create-room-btn').style.display = 'none';
+      document.getElementById('setup-panel').classList.add('hidden');
+      document.getElementById('conductor-panel').classList.remove('hidden');
+      document.getElementById('stage-panel').classList.remove('hidden');
+      document.getElementById('player-panel').classList.remove('hidden');
+      document.getElementById('room-name-display').textContent = 'Local Preview';
+      document.getElementById('room-code').textContent = 'ALL';
+    }
+
     function initPeer(onReady) {
-      const peerConfig = {
-        host: location.hostname,
-        port: parseInt(location.port) || (location.protocol === 'https:' ? 443 : 80),
-        path: '/peerjs',
-        debug: 0
-      };
+      const peerConfig = getPeerConfig();
       peer = new Peer(undefined, peerConfig);
       peer.on('open', (id) => onReady(id));
       peer.on('connection', handleNewConnection);
@@ -630,7 +640,7 @@
       roomName = 'Motion Orchestra';
 
       try {
-        const res = await fetch('/api/rooms', {
+        const res = await fetch(apiUrl('/api/rooms'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: roomName, game: GAME_ID, hostPeerId })
@@ -659,9 +669,9 @@
       if (roomPatchTimer) clearInterval(roomPatchTimer);
       roomPatchTimer = setInterval(syncRoomCount, 15000);
       window.addEventListener('beforeunload', () => {
-        fetch(`/api/rooms/${roomId}`, { method: 'DELETE', keepalive: true }).catch(() => {});
+        fetch(apiUrl(`/api/rooms/${roomId}`), { method: 'DELETE', keepalive: true }).catch(() => {});
       });
-      devicePollHandle = pollRoomDevices(roomId, renderDeviceFeed);
+      devicePollHandle = devicePollHandle || pollRoomDevices(roomId, renderDeviceFeed);
       requestRender();
     }
 
@@ -684,7 +694,7 @@
 
     function syncRoomCount() {
       if (!roomId) return;
-      fetch(`/api/rooms/${roomId}`, {
+      fetch(apiUrl(`/api/rooms/${roomId}`), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ playerCount: Object.keys(players).length })
@@ -1025,7 +1035,7 @@
 
     function endRoom() {
       broadcast({ type: 'game-ended' });
-      if (roomId) fetch(`/api/rooms/${roomId}`, { method: 'DELETE' }).catch(() => {});
+      if (roomId) fetch(apiUrl(`/api/rooms/${roomId}`), { method: 'DELETE' }).catch(() => {});
       location.href = '/';
     }
 

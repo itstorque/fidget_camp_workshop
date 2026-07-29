@@ -489,6 +489,8 @@
   </div><!-- /play-ui -->
 
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <script src="/config.js"></script>
+  <script src="/js/api-config.js"></script>
   <script src="/js/device-stream.js"></script>
   <script>
     // =====================
@@ -539,12 +541,7 @@
       playerName = name;
       document.getElementById('topbar-name').textContent = name;
 
-      const peerConfig = {
-        host: location.hostname,
-        port: parseInt(location.port) || (location.protocol === 'https:' ? 443 : 80),
-        path: '/peerjs',
-        debug: 0
-      };
+      const peerConfig = getPeerConfig();
 
       peer = new Peer(undefined, peerConfig);
 

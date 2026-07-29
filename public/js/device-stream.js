@@ -58,7 +58,7 @@ function startDeviceStreaming({ roomId, deviceId, name, intervalMs = 200, onSamp
 
   function send() {
     if (stopped) return;
-    fetch(`/api/devices/${encodeURIComponent(roomId)}`, {
+    fetch(apiUrl(`/api/devices/${encodeURIComponent(roomId)}`), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       keepalive: true,
@@ -81,27 +81,39 @@ function startDeviceStreaming({ roomId, deviceId, name, intervalMs = 200, onSamp
 }
 
 async function fetchRoomDevices(roomId) {
-  const res = await fetch(`/api/devices/${encodeURIComponent(roomId)}`);
+  const res = await fetch(apiUrl(`/api/devices/${encodeURIComponent(roomId)}`));
   if (!res.ok) throw new Error('Failed to fetch room devices');
   return res.json();
 }
 
 async function fetchAllDevices() {
-  const res = await fetch('/api/devices/all');
+  const res = await fetch(apiUrl('/api/devices/all'));
   if (!res.ok) throw new Error('Failed to fetch devices');
   return res.json();
 }
 
-// Repeatedly fetches /api/devices/:room and hands the array of devices to
-// onData. Returns { stop() } to cancel polling.
+// Repeatedly fetches device data and hands the array of devices to onData.
+// Normally this polls /api/devices/:room, filtered to just that room. But
+// when running in local preview mode (window.API_BASE set, i.e. `npm run
+// start:local`), there's no way to know which remote room to filter by since
+// no real players joined this local room — so instead it polls
+// /api/devices/all and flattens every room's devices together, letting you
+// preview live sensor data from whatever's happening on the deployed server.
+// Returns { stop() } to cancel polling.
 function pollRoomDevices(roomId, onData, intervalMs = 500) {
   let stopped = false;
+  const useAllDevices = !!window.API_BASE;
 
   async function tick() {
     if (stopped) return;
     try {
-      const data = await fetchRoomDevices(roomId);
-      onData(data);
+      if (useAllDevices) {
+        const byRoom = await fetchAllDevices();
+        onData(Object.values(byRoom).flat());
+      } else {
+        const data = await fetchRoomDevices(roomId);
+        onData(data);
+      }
     } catch (e) {
       // ignore transient network errors, keep polling
     }
