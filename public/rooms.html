@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>🎮 Join a Room</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .action-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .action-row .btn {
+      flex: 1;
+    }
+
+    .rooms-empty-state .empty-icon {
+      animation: bounce-in 0.5s ease-out;
+    }
+
+    .pulse-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      margin-right: 6px;
+      animation: pulse-dot 2s infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    .room-player-count {
+      background: var(--purple-pale);
+      color: var(--purple);
+      border-radius: 20px;
+      padding: 2px 10px;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="page-header">
+      <a href="/" class="back-btn">← Back</a>
+      <h1 id="page-title">Join a Game</h1>
+    </header>
+
+    <div class="content">
+      <!-- Action buttons -->
+      <div class="action-row">
+        <button class="btn btn-primary" id="host-btn">🎮 Host</button>
+        <button class="btn btn-secondary" id="refresh-btn">🔄 Refresh</button>
+      </div>
+
+      <!-- Room list header -->
+      <div class="section-title">
+        <h2>
+          <span class="pulse-dot"></span>
+          Live Rooms
+        </h2>
+        <span id="room-count" style="font-size:13px;color:var(--text-muted);font-weight:700"></span>
+      </div>
+
+      <!-- Rooms -->
+      <div id="rooms-container">
+        <div class="loading">
+          <span class="spinner">🌀</span> Loading rooms...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =====================
+    // INIT
+    // =====================
+    const params = new URLSearchParams(location.search);
+    const GAME_ID = params.get('game') || 'gyroscope-test';
+
+    const GAME_META = {
+      'instrument-symphony': {
+        name: '🎼 Instrument Symphony',
+        hostPath: '/games/instrument-symphony/host.html',
+        playPath: '/games/instrument-symphony/play.html'
+      },
+      'gyroscope-test': {
+        name: '🎯 Gyroscope Test',
+        hostPath: '/games/gyroscope-test/host.html',
+        playPath: '/games/gyroscope-test/play.html'
+      },
+      'sensor-skeleton': {
+        name: '📊 Sensor Skeleton',
+        hostPath: '/games/sensor-skeleton/host.html',
+        playPath: '/games/sensor-skeleton/play.html'
+      }
+    };
+
+    const meta = GAME_META[GAME_ID];
+    if (meta) {
+      document.getElementById('page-title').textContent = meta.name;
+    }
+
+    document.getElementById('host-btn').addEventListener('click', () => {
+      location.href = meta?.hostPath || '/';
+    });
+
+    document.getElementById('refresh-btn').addEventListener('click', loadRooms);
+
+    // =====================
+    // LOAD ROOMS
+    // =====================
+    let autoRefreshTimer = null;
+
+    async function loadRooms() {
+      try {
+        const res = await fetch(`/api/rooms?game=${encodeURIComponent(GAME_ID)}`);
+        if (!res.ok) throw new Error('Bad response');
+        const rooms = await res.json();
+        renderRooms(rooms);
+      } catch (e) {
+        document.getElementById('rooms-container').innerHTML = `
+          <div class="error-state">
+            😵 Failed to load rooms.<br>
+            <small>Is the server running?</small>
+          </div>`;
+      }
+    }
+
+    function renderRooms(rooms) {
+      const container = document.getElementById('rooms-container');
+      const countEl = document.getElementById('room-count');
+
+      if (rooms.length === 0) {
+        countEl.textContent = '';
+        container.innerHTML = `
+          <div class="empty-state rooms-empty-state">
+            <span class="empty-icon">🏠</span>
+            No open rooms right now!
+            <div class="empty-hint">Be the first to host a game 👆</div>
+          </div>`;
+        return;
+      }
+
+      countEl.textContent = `${rooms.length} room${rooms.length !== 1 ? 's' : ''}`;
+
+      container.innerHTML = rooms.map(room => `
+        <div class="room-card" onclick="joinRoom('${esc(room.hostPeerId)}', '${esc(room.roomId)}')">
+          <div style="flex:1;min-width:0">
+            <div class="room-name">${esc(room.name)}</div>
+            <div class="room-meta">
+              <span>📍 ${esc(room.roomId)}</span>
+            </div>
+          </div>
+          <span class="room-player-count">👥 ${room.playerCount}</span>
+          <button class="btn btn-secondary" style="white-space:nowrap;padding:10px 16px">Join →</button>
+        </div>
+      `).join('');
+    }
+
+    function joinRoom(hostPeerId, roomId) {
+      const playPath = meta?.playPath || '/';
+      location.href = `${playPath}?peer=${encodeURIComponent(hostPeerId)}&room=${encodeURIComponent(roomId)}`;
+    }
+
+    // Safe HTML escaping
+    function esc(str) {
+      const d = document.createElement('div');
+      d.textContent = String(str ?? '');
+      return d.innerHTML;
+    }
+
+    // Auto-refresh every 5s
+    loadRooms();
+    autoRefreshTimer = setInterval(loadRooms, 5000);
+
+    // Stop polling when tab is hidden
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        clearInterval(autoRefreshTimer);
+      } else {
+        loadRooms();
+        autoRefreshTimer = setInterval(loadRooms, 5000);
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>📊 Sensor Skeleton — Host</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    html, body { background: #0a0a0a; }
+    .app { background: #0a0a0a; }
+
+    .host-header {
+      background: #1a1a1a;
+      color: white;
+      padding: 20px 20px 24px;
+      text-align: center;
+      border-bottom: 1px solid #333;
+    }
+
+    .host-game-title {
+      font-size: 14px;
+      font-weight: 700;
+      opacity: 0.7;
+      margin-bottom: 6px;
+    }
+
+    .host-room-name { font-size: 22px; font-weight: 900; }
+
+    .room-code-label {
+      font-size: 12px;
+      font-weight: 700;
+      opacity: 0.6;
+      margin-top: 14px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .room-code {
+      display: inline-block;
+      background: rgba(96,165,250,0.15);
+      border-radius: 14px;
+      padding: 8px 20px;
+      font-size: 30px;
+      font-weight: 900;
+      letter-spacing: 0.12em;
+      margin: 6px 0;
+      font-variant-numeric: tabular-nums;
+      color: #60a5fa;
+    }
+
+    .host-status-badge {
+      display: inline-block;
+      background: rgba(96,165,250,0.15);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      margin-top: 10px;
+      color: #60a5fa;
+    }
+
+    .host-main {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      background: #0a0a0a;
+      padding: 16px;
+    }
+
+    .players-section-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 10px;
+    }
+
+    .no-players-hint {
+      text-align: center;
+      padding: 40px 20px;
+      color: #666;
+      font-weight: 700;
+      font-size: 15px;
+    }
+
+    .no-players-hint .hint-icon {
+      font-size: 48px;
+      display: block;
+      margin-bottom: 12px;
+    }
+
+    .player-card {
+      background: #1a1a1a;
+      border-radius: 16px;
+      padding: 14px;
+      border: 2px solid #333;
+      margin-bottom: 14px;
+    }
+
+    .player-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .player-card-name {
+      font-size: 15px;
+      font-weight: 800;
+      color: #ccc;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .player-card-status {
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 10px;
+      border-radius: 20px;
+      background: rgba(74,222,128,0.15);
+      color: #4ade80;
+      white-space: nowrap;
+    }
+
+    .player-card-status.stale {
+      background: rgba(248,113,113,0.15);
+      color: #f87171;
+    }
+
+    .sensor-pair {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .sensor-box {
+      background: #0a0a0a;
+      border-radius: 12px;
+      padding: 8px;
+      min-height: 0;
+    }
+
+    .sensor-box-title {
+      font-size: 10px;
+      font-weight: 800;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-bottom: 4px;
+    }
+
+    canvas {
+      width: 100%;
+      height: 80px;
+      display: block;
+      border-radius: 8px;
+    }
+
+    .sensor-values {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .sensor-values span { flex: 1; text-align: center; }
+
+    .game-controls {
+      padding: 16px;
+      background: #1a1a1a;
+      border-top: 1px solid #333;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Setup overlay -->
+  <div class="overlay center" id="setup-overlay">
+    <div class="overlay-card">
+      <span class="overlay-icon">📊</span>
+      <h2 class="overlay-title">Host a Room</h2>
+      <p class="overlay-desc">Set up your <strong>Sensor Skeleton</strong> room.</p>
+      <input type="text" class="text-input" id="room-name-input" placeholder="Room name" maxlength="40" value="My Room">
+      <button class="btn" style="width:100%" id="create-room-btn">Create Room 🚀</button>
+    </div>
+  </div>
+
+  <!-- Main UI -->
+  <div id="main-ui" class="hidden" style="display:flex;flex-direction:column;min-height:100vh">
+
+    <div class="host-header">
+      <div class="host-game-title">📊 Sensor Skeleton</div>
+      <div class="host-room-name" id="room-name-display">—</div>
+      <div class="room-code-label">Room Code</div>
+      <div class="room-code" id="room-code">——</div>
+      <div class="host-status-badge" id="status-badge">⏳ Waiting</div>
+    </div>
+
+    <div class="host-main">
+      <div class="players-section-title" id="players-section-title">Players (0)</div>
+      <div id="players-list">
+        <div class="no-players-hint">
+          <span class="hint-icon">👀</span>
+          No players yet!<br>
+          Share the room code.
+        </div>
+      </div>
+    </div>
+
+    <div class="game-controls">
+      <a href="/rooms?game=sensor-skeleton" class="btn btn-ghost" style="width:100%;text-align:center;text-decoration:none">← Back to Lobby</a>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <script src="/js/device-stream.js"></script>
+  <script>
+    const GAME_ID = 'sensor-skeleton';
+
+    let peer = null, roomId = null, roomName = '';
+    const connections = {}, players = {};
+    const plots = {}; // deviceId -> { accel, gyro }
+    let devicePollHandle = null;
+
+    function initPeer(onReady) {
+      const peerConfig = {
+        host: location.hostname,
+        port: parseInt(location.port) || (location.protocol === 'https:' ? 443 : 80),
+        path: '/peerjs',
+        debug: 0
+      };
+      peer = new Peer(undefined, peerConfig);
+      peer.on('open', (id) => onReady(id));
+      peer.on('connection', handleNewConnection);
+      peer.on('error', (err) => {
+        console.warn('PeerJS error:', err.type);
+        peer.destroy();
+        peer = new Peer(undefined, { debug: 0 });
+        peer.on('open', (id) => onReady(id));
+        peer.on('connection', handleNewConnection);
+      });
+    }
+
+    function handleNewConnection(conn) {
+      conn.on('open', () => {
+        connections[conn.peer] = conn;
+        conn.on('data', (data) => handlePlayerMsg(conn.peer, data));
+        conn.on('close', () => onPlayerLeft(conn.peer));
+        conn.on('error', () => onPlayerLeft(conn.peer));
+      });
+    }
+
+    function onPlayerLeft(peerId) {
+      delete players[peerId];
+      delete connections[peerId];
+      delete plots[peerId];
+      updateUI();
+      updateRoomPlayerCount();
+    }
+
+    function handlePlayerMsg(peerId, data) {
+      if (data.type === 'join') {
+        const name = String(data.name || 'Anonymous').slice(0, 24);
+        players[peerId] = { name };
+        updateUI();
+        updateRoomPlayerCount();
+      }
+    }
+
+    async function createRoom(hostPeerId) {
+      roomName = document.getElementById('room-name-input').value.trim() || 'My Room';
+      try {
+        const res = await fetch('/api/rooms', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: roomName, game: GAME_ID, hostPeerId })
+        });
+        const data = await res.json();
+        roomId = data.roomId;
+        onRoomCreated();
+      } catch (e) {
+        alert('Error: ' + e.message);
+        document.getElementById('create-room-btn').textContent = 'Create Room 🚀';
+        document.getElementById('create-room-btn').disabled = false;
+      }
+    }
+
+    function onRoomCreated() {
+      document.getElementById('setup-overlay').classList.add('hidden');
+      document.getElementById('main-ui').classList.remove('hidden');
+      document.getElementById('room-name-display').textContent = roomName;
+      document.getElementById('room-code').textContent = roomId;
+
+      setInterval(updateRoomPlayerCount, 15000);
+      window.addEventListener('beforeunload', () => {
+        fetch(`/api/rooms/${roomId}`, { method: 'DELETE', keepalive: true }).catch(() => {});
+      });
+
+      devicePollHandle = pollRoomDevices(roomId, renderDevices, 200);
+    }
+
+    function updateRoomPlayerCount() {
+      if (!roomId) return;
+      fetch(`/api/rooms/${roomId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerCount: Object.keys(players).length })
+      }).catch(() => {});
+    }
+
+    function updateUI() {
+      const count = Object.keys(players).length;
+      document.getElementById('players-section-title').textContent = `Players (${count})`;
+      document.getElementById('status-badge').textContent =
+        count === 0 ? '⏳ Waiting for players' :
+        count === 1 ? '👤 1 player' :
+        `👥 ${count} players`;
+
+      const list = document.getElementById('players-list');
+      if (count === 0) {
+        list.innerHTML = `<div class="no-players-hint"><span class="hint-icon">👀</span>No players yet!<br>Share the room code.</div>`;
+        return;
+      }
+
+      // Only rebuild DOM when the set of players changes; canvases persist
+      // across renderDevices() calls so plots keep scrolling smoothly.
+      const existingIds = new Set(Array.from(list.querySelectorAll('[data-peer-id]')).map(el => el.dataset.peerId));
+      const wantedIds = new Set(Object.keys(players));
+      const sameSet = existingIds.size === wantedIds.size && [...wantedIds].every(id => existingIds.has(id));
+      if (sameSet) return;
+
+      list.innerHTML = Object.entries(players).map(([peerId, p]) => `
+        <div class="player-card" data-peer-id="${peerId}">
+          <div class="player-card-header">
+            <span class="player-card-name">${esc(p.name)}</span>
+            <span class="player-card-status stale" id="status-${peerId}">No data</span>
+          </div>
+          <div class="sensor-pair">
+            <div class="sensor-box">
+              <div class="sensor-box-title">📳 Accelerometer</div>
+              <canvas id="accel-${peerId}"></canvas>
+              <div class="sensor-values">
+                <span style="color:#f87171" id="accel-x-${peerId}">x: 0.0</span>
+                <span style="color:#4ade80" id="accel-y-${peerId}">y: 0.0</span>
+                <span style="color:#60a5fa" id="accel-z-${peerId}">z: 0.0</span>
+              </div>
+            </div>
+            <div class="sensor-box">
+              <div class="sensor-box-title">🌀 Gyroscope</div>
+              <canvas id="gyro-${peerId}"></canvas>
+              <div class="sensor-values">
+                <span style="color:#fbbf24" id="gyro-a-${peerId}">α: 0.0°</span>
+                <span style="color:#a78bfa" id="gyro-b-${peerId}">β: 0.0°</span>
+                <span style="color:#fb923c" id="gyro-g-${peerId}">γ: 0.0°</span>
+              </div>
+            </div>
+          </div>
+        </div>`).join('');
+
+      Object.keys(players).forEach((peerId) => {
+        plots[peerId] = {
+          accel: createSensorPlot(document.getElementById(`accel-${peerId}`), [
+            { key: 'x', color: '#f87171' },
+            { key: 'y', color: '#4ade80' },
+            { key: 'z', color: '#60a5fa' }
+          ]),
+          gyro: createSensorPlot(document.getElementById(`gyro-${peerId}`), [
+            { key: 'alpha', color: '#fbbf24' },
+            { key: 'beta', color: '#a78bfa' },
+            { key: 'gamma', color: '#fb923c' }
+          ])
+        };
+      });
+    }
+
+    // Devices are keyed by deviceId, which play.html sets to its own PeerJS
+    // id — the same id used to open the game-logic connection to the host.
+    function renderDevices(deviceList) {
+      const seen = new Set();
+      (deviceList || []).forEach((d) => {
+        const peerId = d.deviceId;
+        seen.add(peerId);
+        if (!players[peerId]) {
+          players[peerId] = { name: d.name };
+          updateUI();
+        }
+        const plot = plots[peerId];
+        if (!plot) return;
+
+        const motion = d.motion || { x: 0, y: 0, z: 0 };
+        const orientation = d.orientation || { alpha: 0, beta: 0, gamma: 0 };
+        plot.accel.push(motion);
+        plot.gyro.push(orientation);
+
+        setText(`accel-x-${peerId}`, 'x: ' + motion.x.toFixed(1));
+        setText(`accel-y-${peerId}`, 'y: ' + motion.y.toFixed(1));
+        setText(`accel-z-${peerId}`, 'z: ' + motion.z.toFixed(1));
+        setText(`gyro-a-${peerId}`, 'α: ' + orientation.alpha.toFixed(1) + '°');
+        setText(`gyro-b-${peerId}`, 'β: ' + orientation.beta.toFixed(1) + '°');
+        setText(`gyro-g-${peerId}`, 'γ: ' + orientation.gamma.toFixed(1) + '°');
+
+        const statusEl = document.getElementById(`status-${peerId}`);
+        if (statusEl) {
+          statusEl.textContent = 'Live';
+          statusEl.classList.remove('stale');
+        }
+      });
+    }
+
+    function setText(id, text) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = text;
+    }
+
+    function esc(str) {
+      const d = document.createElement('div');
+      d.textContent = String(str ?? '');
+      return d.innerHTML;
+    }
+
+    document.getElementById('create-room-btn').addEventListener('click', () => {
+      const name = document.getElementById('room-name-input').value.trim();
+      if (!name) { document.getElementById('room-name-input').focus(); return; }
+      const btn = document.getElementById('create-room-btn');
+      btn.textContent = '⏳ Creating...';
+      btn.disabled = true;
+      initPeer((peerId) => createRoom(peerId));
+    });
+
+    document.getElementById('room-name-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('create-room-btn').click();
+    });
+  </script>
+</body>
+</html>

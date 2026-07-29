@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>🎯 Gyroscope Test — Host</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    html, body { background: #0a0a0a; }
+    .app { background: #0a0a0a; }
+
+    .host-header {
+      background: #1a1a1a;
+      color: white;
+      padding: 20px 20px 24px;
+      text-align: center;
+      border-bottom: 1px solid #333;
+      margin-bottom: 0;
+    }
+
+    .host-game-title {
+      font-size: 14px;
+      font-weight: 700;
+      opacity: 0.7;
+      margin-bottom: 6px;
+    }
+
+    .host-room-name {
+      font-size: 22px;
+      font-weight: 900;
+    }
+
+    .room-code-label {
+      font-size: 12px;
+      font-weight: 700;
+      opacity: 0.6;
+      margin-top: 14px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .room-code {
+      display: inline-block;
+      background: rgba(255,140,60,0.15);
+      border-radius: 14px;
+      padding: 8px 20px;
+      font-size: 30px;
+      font-weight: 900;
+      letter-spacing: 0.12em;
+      margin: 6px 0;
+      font-variant-numeric: tabular-nums;
+      color: #ff8c3c;
+    }
+
+    .host-status-badge {
+      display: inline-block;
+      background: rgba(255,140,60,0.15);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      margin-top: 10px;
+      color: #ff8c3c;
+    }
+
+    .host-main {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      background: #0a0a0a;
+    }
+
+    .players-section {
+      padding: 12px 16px 8px;
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .players-section-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 10px;
+    }
+
+    .players-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .no-players-hint {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 40px 20px;
+      color: #666;
+      font-weight: 700;
+      font-size: 15px;
+    }
+
+    .no-players-hint .hint-icon {
+      font-size: 48px;
+      display: block;
+      margin-bottom: 12px;
+    }
+
+    .player-compass-card {
+      background: #1a1a1a;
+      border-radius: 16px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      border: 2px solid #333;
+      min-height: 0;
+      transition: border-color 0.3s;
+    }
+
+    .player-compass-card.winner {
+      border-color: #fbbf24;
+    }
+
+    .player-compass-name {
+      font-size: 13px;
+      font-weight: 800;
+      color: #ccc;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      width: 100%;
+      text-align: center;
+    }
+
+    .player-compass-dial {
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      background: #0a0a0a;
+      border: 2px solid #333;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .player-compass-center {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      background: #ff8c3c;
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 5;
+    }
+
+    .player-compass-needle {
+      position: absolute;
+      width: 110px;
+      height: 4px;
+      background: linear-gradient(90deg, #ff6b35, #ff8c3c, #ff6b35);
+      top: 50%;
+      left: 50%;
+      transform-origin: center center;
+      translate: -50% -50%;
+      border-radius: 2px;
+      box-shadow: 0 0 10px rgba(255,140,60,0.5);
+      z-index: 4;
+    }
+
+    .player-compass-target {
+      position: absolute;
+      width: 110px;
+      height: 3px;
+      background: rgba(200, 200, 200, 0.55);
+      top: 50%;
+      left: 50%;
+      transform-origin: center center;
+      translate: -50% -50%;
+      border-radius: 2px;
+      z-index: 3;
+    }
+
+    .player-angle-value {
+      font-size: 14px;
+      font-weight: 900;
+      color: #ff8c3c;
+      font-variant-numeric: tabular-nums;
+      text-align: center;
+    }
+
+    .player-angle-delta {
+      font-size: 12px;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .player-angle-delta.delta-good { color: #4ade80; }
+    .player-angle-delta.delta-ok   { color: #fbbf24; }
+    .player-angle-delta.delta-bad  { color: #f87171; }
+
+    .timer-bar {
+      height: 5px;
+      background: #333;
+      flex-shrink: 0;
+    }
+
+    .timer-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #ff8c3c, #ff6b35);
+      transition: width 0.15s linear;
+    }
+
+    .timer-fill.urgent {
+      background: linear-gradient(90deg, #f87171, #dc2626);
+    }
+
+    .game-controls {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: #1a1a1a;
+      border-top: 1px solid #333;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, #ff8c3c, #ff6b35);
+      color: white;
+      border: none;
+      font-weight: 900;
+      padding: 13px 24px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.18s;
+      font-family: 'Nunito', sans-serif;
+    }
+
+    .btn:active { transform: scale(0.96); }
+    .btn-ghost {
+      background: transparent;
+      border: 2px solid #333;
+      color: #999;
+    }
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .live-strip {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #666;
+      background: #1a1a1a;
+      border-bottom: 1px solid #333;
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #f87171;
+    }
+
+    .live-dot.playing {
+      background: #4ade80;
+      animation: pulse-dot 1.2s infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .overlay {
+      background: rgba(10,10,10,0.85);
+    }
+
+    .overlay-card {
+      background: #1a1a1a;
+      color: #ccc;
+    }
+
+    .overlay-title {
+      color: white;
+    }
+
+    .overlay-desc {
+      color: #999;
+    }
+
+    .text-input {
+      background: #0a0a0a;
+      border-color: #333;
+      color: white;
+    }
+
+    .results-list {
+      background: #0a0a0a;
+      border-radius: 12px;
+    }
+
+    .delta-good { color: #4ade80; }
+    .delta-ok   { color: #fbbf24; }
+    .delta-bad  { color: #f87171; }
+
+    /* Live sensor feed panel (from /api/devices/:room) */
+    .device-feed {
+      padding: 10px 16px 14px;
+      flex-shrink: 0;
+      border-top: 1px solid #333;
+    }
+
+    .device-feed-title {
+      font-size: 12px;
+      font-weight: 800;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 8px;
+    }
+
+    .device-feed-rows {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+
+    .device-feed-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #1a1a1a;
+      border-radius: 10px;
+      padding: 6px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #999;
+    }
+
+    .device-feed-row .name {
+      flex: 0 0 auto;
+      color: #ccc;
+      max-width: 90px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .device-feed-row .metrics {
+      flex: 1;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      color: #ff8c3c;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Setup overlay -->
+  <div class="overlay center" id="setup-overlay">
+    <div class="overlay-card">
+      <span class="overlay-icon">🎯</span>
+      <h2 class="overlay-title">Host a Game</h2>
+      <p class="overlay-desc">Set up your <strong>Gyroscope Test</strong> room.</p>
+      <input type="text" class="text-input" id="room-name-input" placeholder="Room name" maxlength="40" value="My Room">
+      <button class="btn" style="width:100%" id="create-room-btn">Create Room 🚀</button>
+    </div>
+  </div>
+
+  <!-- Results overlay -->
+  <div class="overlay center hidden" id="results-overlay">
+    <div class="overlay-card">
+      <span class="overlay-icon" id="results-icon">🏆</span>
+      <h2 class="overlay-title" id="results-title">Round Over!</h2>
+      <p class="overlay-desc" id="results-subtitle">Target was —°</p>
+      <div class="results-list" id="results-list"></div>
+      <button class="btn" style="width:100%;margin-top:16px" id="next-round-btn">Next Round →</button>
+      <button class="btn btn-ghost" style="width:100%;margin-top:8px" id="end-game-btn">End Game</button>
+    </div>
+  </div>
+
+  <!-- Main UI -->
+  <div id="main-ui" class="hidden" style="display:flex;flex-direction:column;min-height:100vh">
+
+    <!-- Header -->
+    <div class="host-header">
+      <div class="host-game-title">🎯 Gyroscope Test</div>
+      <div class="host-room-name" id="room-name-display">—</div>
+      <div class="room-code-label">Room Code</div>
+      <div class="room-code" id="room-code">——</div>
+      <div class="host-status-badge" id="status-badge">⏳ Waiting</div>
+    </div>
+
+    <!-- Live status -->
+    <div class="live-strip">
+      <div class="live-dot" id="live-dot"></div>
+      <span id="live-label">Idle</span>
+      <span style="flex:1;text-align:center;font-size:16px;font-weight:900;color:#ff8c3c" id="target-display" hidden>🎯 Target: —°</span>
+    </div>
+
+    <!-- Timer bar -->
+    <div class="timer-bar hidden" id="timer-bar">
+      <div class="timer-fill" id="timer-fill" style="width:100%"></div>
+    </div>
+
+    <!-- Players grid -->
+    <div class="host-main">
+      <div class="players-section">
+        <div class="players-section-title" id="players-section-title">Players (0)</div>
+        <div class="players-grid" id="players-grid">
+          <div class="no-players-hint">
+            <span class="hint-icon">👀</span>
+            No players yet!<br>
+            Share the room code.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live sensor feed (from /api/devices/:room) -->
+    <div class="device-feed">
+      <div class="device-feed-title">📡 Live Sensor Feed</div>
+      <div class="device-feed-rows" id="device-feed-rows">
+        <div class="device-feed-row"><span class="name">No devices yet</span></div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="game-controls">
+      <button class="btn" id="start-round-btn" style="width:100%" disabled>▶️ Start Round</button>
+      <button class="btn" id="end-round-btn" style="width:100%;display:none" hidden>⏹ End Round Now</button>
+      <a href="/rooms?game=gyroscope-test" class="btn btn-ghost" style="width:100%;text-align:center;text-decoration:none">← Back to Lobby</a>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <script src="/js/device-stream.js"></script>
+  <script>
+    const GAME_ID = 'gyroscope-test';
+    const ROUND_DURATION_MS = 15000;
+    const POINTS_MAP = [5, 3, 2, 1];
+
+    let peer = null, roomId = null, roomName = '';
+    const connections = {}, players = {};
+    let gameState = 'lobby', targetAngle = 0, roundStartTime = 0, timerRAF = null, scores = {};
+    let devicePollHandle = null;
+
+    function initPeer(onReady) {
+      const peerConfig = {
+        host: location.hostname,
+        port: parseInt(location.port) || (location.protocol === 'https:' ? 443 : 80),
+        path: '/peerjs',
+        debug: 0
+      };
+      peer = new Peer(undefined, peerConfig);
+      peer.on('open', (id) => onReady(id));
+      peer.on('connection', handleNewConnection);
+      peer.on('error', (err) => {
+        console.warn('PeerJS error:', err.type);
+        peer.destroy();
+        peer = new Peer(undefined, { debug: 0 });
+        peer.on('open', (id) => onReady(id));
+        peer.on('connection', handleNewConnection);
+      });
+    }
+
+    function handleNewConnection(conn) {
+      conn.on('open', () => {
+        connections[conn.peer] = conn;
+        conn.on('data', (data) => handlePlayerMsg(conn.peer, data));
+        conn.on('close', () => onPlayerLeft(conn.peer));
+        conn.on('error', () => onPlayerLeft(conn.peer));
+        try {
+          conn.send({ type: 'welcome', gameState, targetAngle: gameState === 'playing' ? targetAngle : null, players: Object.entries(players).map(([id, p]) => ({ id, name: p.name })) });
+        } catch (e) {}
+      });
+    }
+
+    function onPlayerLeft(peerId) {
+      const p = players[peerId];
+      if (p) broadcast({ type: 'player-left', peerId, name: p.name });
+      delete players[peerId];
+      delete connections[peerId];
+      updateUI();
+    }
+
+    function handlePlayerMsg(peerId, data) {
+      switch (data.type) {
+        case 'join': {
+          const name = String(data.name || 'Anonymous').slice(0, 24);
+          players[peerId] = { name, angle: { roll: 0, pitch: 0, yaw: 0 }, committed: false, commitTime: null, commitAngle: null };
+          broadcast({ type: 'player-joined', peerId, name });
+          if (gameState === 'playing') {
+            const already = Object.entries(players).filter(([id, p]) => p.committed && id !== peerId).map(([id, p]) => ({ name: p.name, angle: p.commitAngle }));
+            if (already.length > 0) try { connections[peerId].send({ type: 'committed-so-far', players: already }); } catch (e) {}
+            try { connections[peerId].send({ type: 'round-start', targetAngle, duration: ROUND_DURATION_MS, elapsed: Date.now() - roundStartTime }); } catch (e) {}
+          }
+          updateUI();
+          updateRoomPlayerCount();
+          break;
+        }
+        case 'orientation': {
+          if (!players[peerId]) break;
+          players[peerId].angle = { roll: data.roll ?? 0, pitch: data.pitch ?? 0, yaw: data.yaw ?? 0 };
+          break;
+        }
+        case 'commit': {
+          const p = players[peerId];
+          if (!p || p.committed || gameState !== 'playing') break;
+          p.committed = true;
+          p.commitTime = data.timestamp ?? Date.now();
+          p.commitAngle = data.roll ?? 0;
+          updateUI();
+          broadcast({ type: 'player-committed', peerId, name: p.name, angle: p.commitAngle });
+          const allIn = Object.values(players).every(x => x.committed);
+          if (allIn && Object.keys(players).length > 0) endRound();
+          break;
+        }
+      }
+    }
+
+    function broadcast(data) {
+      Object.values(connections).forEach(conn => { try { conn.send(data); } catch (e) {} });
+    }
+
+    async function createRoom(hostPeerId) {
+      roomName = document.getElementById('room-name-input').value.trim() || 'My Room';
+      try {
+        const res = await fetch('/api/rooms', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: roomName, game: GAME_ID, hostPeerId })
+        });
+        const data = await res.json();
+        roomId = data.roomId;
+        onRoomCreated();
+      } catch (e) {
+        alert('Error: ' + e.message);
+        document.getElementById('create-room-btn').textContent = 'Create Room 🚀';
+        document.getElementById('create-room-btn').disabled = false;
+      }
+    }
+
+    function onRoomCreated() {
+      document.getElementById('setup-overlay').classList.add('hidden');
+      document.getElementById('main-ui').classList.remove('hidden');
+      document.getElementById('room-name-display').textContent = roomName;
+      document.getElementById('room-code').textContent = roomId;
+      setInterval(() => {
+        fetch(`/api/rooms/${roomId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ playerCount: Object.keys(players).length })
+        }).catch(() => {});
+      }, 15000);
+      window.addEventListener('beforeunload', () => {
+        fetch(`/api/rooms/${roomId}`, { method: 'DELETE', keepalive: true }).catch(() => {});
+      });
+      devicePollHandle = pollRoomDevices(roomId, renderDeviceFeed);
+    }
+
+    function renderDeviceFeed(deviceList) {
+      const container = document.getElementById('device-feed-rows');
+      if (!deviceList || deviceList.length === 0) {
+        container.innerHTML = `<div class="device-feed-row"><span class="name">No devices yet</span></div>`;
+        return;
+      }
+      container.innerHTML = deviceList.map(d => {
+        const o = d.orientation || { alpha: 0, beta: 0, gamma: 0 };
+        const m = d.motion || { x: 0, y: 0, z: 0 };
+        return `
+          <div class="device-feed-row">
+            <span class="name">${esc(d.name)}</span>
+            <span class="metrics">α${o.alpha.toFixed(0)}° β${o.beta.toFixed(0)}° γ${o.gamma.toFixed(0)}° · x${m.x.toFixed(1)} y${m.y.toFixed(1)} z${m.z.toFixed(1)}</span>
+          </div>`;
+      }).join('');
+    }
+
+    function updateRoomPlayerCount() {
+      if (!roomId) return;
+      fetch(`/api/rooms/${roomId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerCount: Object.keys(players).length })
+      }).catch(() => {});
+    }
+
+    function startRound() {
+      if (Object.keys(players).length === 0) return;
+      targetAngle = Math.round(Math.random() * 130 - 65);
+      gameState = 'playing';
+      roundStartTime = Date.now();
+      Object.values(players).forEach(p => { p.committed = false; p.commitTime = null; p.commitAngle = null; });
+      document.getElementById('start-round-btn').style.display = 'none';
+      document.getElementById('end-round-btn').hidden = false;
+      document.getElementById('timer-bar').classList.remove('hidden');
+      document.getElementById('timer-fill').style.width = '100%';
+      document.getElementById('timer-fill').classList.remove('urgent');
+      document.getElementById('target-display').hidden = false;
+      document.getElementById('target-display').textContent = `🎯 Target: ${targetAngle}°`;
+      setLiveStatus(true, '🎮 Round in progress!');
+      updateUI();
+      broadcast({ type: 'round-start', targetAngle, duration: ROUND_DURATION_MS, elapsed: 0 });
+
+      const endTime = roundStartTime + ROUND_DURATION_MS;
+      function timerTick() {
+        const remaining = endTime - Date.now();
+        const pct = Math.max(0, remaining / ROUND_DURATION_MS * 100);
+        const fillEl = document.getElementById('timer-fill');
+        fillEl.style.width = `${pct}%`;
+        if (pct < 25) fillEl.classList.add('urgent');
+        if (remaining <= 0) {
+          endRound();
+        } else {
+          timerRAF = requestAnimationFrame(timerTick);
+        }
+      }
+      timerRAF = requestAnimationFrame(timerTick);
+    }
+
+    function endRound() {
+      if (gameState !== 'playing') return;
+      cancelAnimationFrame(timerRAF);
+      gameState = 'results';
+
+      const results = Object.entries(players).map(([peerId, p]) => {
+        const angle = p.committed ? p.commitAngle : (p.angle?.roll ?? 0);
+        const delta = Math.abs(angle - targetAngle);
+        return { peerId, name: p.name, angle, delta, committed: p.committed, commitTime: p.commitTime ?? Infinity };
+      });
+
+      results.sort((a, b) => {
+        if (a.committed !== b.committed) return a.committed ? -1 : 1;
+        const dd = a.delta - b.delta;
+        if (Math.abs(dd) < 0.5) return a.commitTime - b.commitTime;
+        return dd;
+      });
+
+      results.forEach((r, i) => {
+        if (r.committed) {
+          const pts = POINTS_MAP[i] ?? 1;
+          scores[r.name] = (scores[r.name] || 0) + pts;
+        }
+      });
+
+      const winner = results.find(r => r.committed)?.name ?? null;
+      broadcast({ type: 'round-end', results, winner, targetAngle, scores });
+
+      updateUI();
+      document.getElementById('timer-bar').classList.add('hidden');
+      document.getElementById('target-display').hidden = true;
+      document.getElementById('end-round-btn').hidden = true;
+      setLiveStatus(false, 'Round ended');
+      showResults(results, winner);
+    }
+
+    function setLiveStatus(isPlaying, label) {
+      const dot = document.getElementById('live-dot');
+      dot.classList.toggle('playing', isPlaying);
+      document.getElementById('live-label').textContent = label;
+    }
+
+    function updateUI() {
+      const count = Object.keys(players).length;
+      document.getElementById('players-section-title').textContent = `Players (${count})`;
+      document.getElementById('status-badge').textContent =
+        count === 0 ? '⏳ Waiting for players' :
+        count === 1 ? '👤 1 player' :
+        `👥 ${count} players`;
+
+      const btn = document.getElementById('start-round-btn');
+      btn.disabled = count === 0 || gameState === 'playing';
+
+      const grid = document.getElementById('players-grid');
+      if (count === 0) {
+        grid.innerHTML = `<div class="no-players-hint"><span class="hint-icon">👀</span>No players yet!<br>Share the room code.</div>`;
+        return;
+      }
+
+      grid.innerHTML = Object.entries(players).map(([peerId, p]) => buildPlayerCard(peerId, p)).join('');
+    }
+
+    function buildPlayerCard(peerId, p) {
+      const hasLastRoundData = Object.values(players).some(x => x.commitAngle !== null);
+      const showTarget = gameState === 'results' || (gameState === 'lobby' && hasLastRoundData);
+
+      if (!p.committed) {
+        return `
+          <div class="player-compass-card">
+            <div class="player-compass-name">${esc(p.name)}</div>
+            ${showTarget ? `
+              <div class="player-compass-dial">
+                <div class="player-compass-target" style="transform:rotate(${targetAngle}deg)"></div>
+                <div class="player-compass-center"></div>
+              </div>
+            ` : `<div style="flex:1;display:flex;align-items:center;justify-content:center;color:#666;font-weight:700">Waiting...</div>`}
+            ${showTarget ? `<div style="font-size:12px;color:#666;font-weight:700">Waiting...</div>` : ''}
+          </div>`;
+      }
+
+      const angle = p.commitAngle ?? 0;
+      const delta = Math.abs(angle - targetAngle);
+      const deltaClass = delta < 5 ? 'delta-good' : delta < 15 ? 'delta-ok' : 'delta-bad';
+      const isWinner = gameState === 'results' && Object.values(players).filter(x => x.committed).sort((a, b) => {
+        const da = Math.abs((a.commitAngle ?? 0) - targetAngle);
+        const db = Math.abs((b.commitAngle ?? 0) - targetAngle);
+        if (Math.abs(da - db) < 0.5) return (a.commitTime ?? Infinity) - (b.commitTime ?? Infinity);
+        return da - db;
+      })[0] === p;
+
+      return `
+        <div class="player-compass-card ${isWinner ? 'winner' : ''}">
+          <div class="player-compass-name">${esc(p.name)}</div>
+          <div class="player-compass-dial">
+            ${showTarget ? `<div class="player-compass-target" style="transform:rotate(${targetAngle}deg)"></div>` : ''}
+            <div class="player-compass-needle" style="transform:rotate(${angle}deg)"></div>
+            <div class="player-compass-center"></div>
+          </div>
+          <div class="player-angle-value">${angle.toFixed(1)}°</div>
+          ${gameState === 'results' ? `<div class="player-angle-delta ${deltaClass}">Δ ${delta.toFixed(1)}°</div>` : ''}
+          ${isWinner ? '<div style="font-size:20px">🏆</div>' : ''}
+        </div>`;
+    }
+
+    function esc(str) {
+      const d = document.createElement('div');
+      d.textContent = String(str ?? '');
+      return d.innerHTML;
+    }
+
+    function showResults(results, winner) {
+      const rankEmojis = ['🥇', '🥈', '🥉'];
+      document.getElementById('results-icon').textContent = winner ? '🏆' : '😅';
+      document.getElementById('results-title').textContent = winner ? `${winner} wins! 🎉` : 'No one committed!';
+      document.getElementById('results-subtitle').textContent = `Target was ${targetAngle}°`;
+      document.getElementById('results-list').innerHTML = results.map((r, i) => {
+        const deltaClass = r.delta < 5 ? 'delta-good' : r.delta < 15 ? 'delta-ok' : 'delta-bad';
+        return `
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #333;font-weight:700">
+            <div style="font-size:22px;width:30px;text-align:center">${rankEmojis[i] ?? `#${i+1}`}</div>
+            <div style="flex:1;color:#ccc">${esc(r.name)}</div>
+            <div style="text-align:right">
+              <div style="font-size:14px;color:#ff8c3c;font-variant-numeric:tabular-nums">${r.angle.toFixed(1)}°</div>
+              <div style="font-size:13px;font-weight:900;font-variant-numeric:tabular-nums" class="${deltaClass}">Δ${r.delta.toFixed(1)}°</div>
+            </div>
+          </div>`;
+      }).join('');
+      document.getElementById('results-overlay').classList.remove('hidden');
+      if (winner) spawnConfetti();
+    }
+
+    function spawnConfetti() {
+      const emojis = ['🎉','✨','⭐','🌟','🎊','🏆','🎈'];
+      for (let i = 0; i < 24; i++) {
+        setTimeout(() => {
+          const el = document.createElement('div');
+          el.className = 'confetti-piece';
+          el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+          el.style.left = `${Math.random() * 95}vw`;
+          el.style.top = '0';
+          el.style.animationDuration = `${1.4 + Math.random() * 1.2}s`;
+          document.body.appendChild(el);
+          el.addEventListener('animationend', () => el.remove());
+        }, i * 80);
+      }
+    }
+
+    document.getElementById('create-room-btn').addEventListener('click', () => {
+      const name = document.getElementById('room-name-input').value.trim();
+      if (!name) { document.getElementById('room-name-input').focus(); return; }
+      const btn = document.getElementById('create-room-btn');
+      btn.textContent = '⏳ Creating...';
+      btn.disabled = true;
+      initPeer((peerId) => createRoom(peerId));
+    });
+
+    document.getElementById('room-name-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('create-room-btn').click();
+    });
+
+    document.getElementById('start-round-btn').addEventListener('click', startRound);
+
+    document.getElementById('end-round-btn').addEventListener('click', () => {
+      if (confirm('End round now?')) endRound();
+    });
+
+    document.getElementById('next-round-btn').addEventListener('click', () => {
+      document.getElementById('results-overlay').classList.add('hidden');
+      gameState = 'lobby';
+      setLiveStatus(false, 'Ready for next round');
+      updateUI();
+      document.getElementById('start-round-btn').style.display = '';
+    });
+
+    document.getElementById('end-game-btn').addEventListener('click', () => {
+      if (confirm('End the game?')) {
+        broadcast({ type: 'game-ended' });
+        if (roomId) fetch(`/api/rooms/${roomId}`, { method: 'DELETE' }).catch(() => {});
+        location.href = '/';
+      }
+    });
+  </script>
+</body>
+</html>

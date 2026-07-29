@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>🌀 Sensor Games</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .sensor-info {
+      margin: 0 16px 16px;
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .sensor-info h3 {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 12px;
+    }
+
+    .sensor-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .sensor-row:last-child { border-bottom: none; }
+
+    .sensor-icon { font-size: 22px; width: 30px; text-align: center; }
+    .sensor-name { flex: 1; }
+    .sensor-badge {
+      background: var(--purple-pale);
+      color: var(--purple);
+      border-radius: 10px;
+      padding: 2px 10px;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .how-to-play {
+      margin: 0 16px 8px;
+      background: linear-gradient(135deg, #7c3410, #5c2208);
+      border-radius: var(--radius);
+      padding: 20px;
+      color: white;
+    }
+
+    .how-to-play h3 {
+      font-size: 15px;
+      font-weight: 900;
+      margin-bottom: 12px;
+    }
+
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.45;
+      opacity: 0.95;
+    }
+
+    .step-num {
+      background: rgba(255,255,255,0.2);
+      border-radius: 50%;
+      width: 26px;
+      height: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 900;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Hero -->
+    <header class="hero">
+      <span class="hero-icon">🌀</span>
+      <h1 class="hero-title">Sensor Games</h1>
+      <p class="hero-subtitle">Multiplayer fun powered by your phone's sensors ✨</p>
+    </header>
+
+    <!-- Games Grid -->
+    <main>
+      <div class="games-grid">
+
+        <!-- Instrument Symphony -->
+        <div class="game-card" onclick="location.href='/rooms?game=instrument-symphony'">
+          <div class="game-card-icon">🎼</div>
+          <div class="game-card-info">
+            <h2>Instrument Symphony</h2>
+            <p>Each player gets a random instrument. Their accelerometer data becomes a live voice in the host's symphony mix.</p>
+            <div class="game-tags">
+              <span class="tag">👥 Multiplayer</span>
+              <span class="tag">📳 Accelerometer</span>
+              <span class="tag">🎧 Live audio</span>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-full">Play Now →</button>
+        </div>
+
+        <!-- Gyroscope Test -->
+        <div class="game-card" onclick="location.href='/rooms?game=gyroscope-test'">
+          <div class="game-card-icon">🎯</div>
+          <div class="game-card-info">
+            <h2>Gyroscope Test</h2>
+            <p>A target roll angle appears. Tilt your phone to match it, then tap to lock in. Closest wins — speed breaks ties!</p>
+            <div class="game-tags">
+              <span class="tag">👥 Multiplayer</span>
+              <span class="tag">📐 Gyroscope</span>
+              <span class="tag">⚡ Fast rounds</span>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-full">Play Now →</button>
+        </div>
+
+        <!-- Sensor Skeleton -->
+        <div class="game-card" onclick="location.href='/rooms?game=sensor-skeleton'">
+          <div class="game-card-icon">📊</div>
+          <div class="game-card-info">
+            <h2>Sensor Skeleton</h2>
+            <p>A bare-bones starter that streams every player's live accelerometer and gyroscope data to the host as scrolling charts.</p>
+            <div class="game-tags">
+              <span class="tag">👥 Multiplayer</span>
+              <span class="tag">📳 Accelerometer</span>
+              <span class="tag">🌀 Gyroscope</span>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-full">Play Now →</button>
+        </div>
+
+      </div>
+
+      <!-- How to Play -->
+      <div class="how-to-play">
+        <h3>🎮 How to Play</h3>
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div>One person hosts a room on the big screen or their phone.</div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div>Everyone else joins by visiting <strong>this site</strong> on their phone.</div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div>Play rounds, earn points, crown a champion! 🏆</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sensor Info -->
+      <div class="sensor-info" style="margin-top:16px">
+        <h3>📡 Sensors Used</h3>
+        <div class="sensor-row">
+          <span class="sensor-icon">📳</span>
+          <span class="sensor-name">Accelerometer — motion that drives live audio</span>
+          <span class="sensor-badge">Instrument Symphony</span>
+        </div>
+        <div class="sensor-row">
+          <span class="sensor-icon">🌀</span>
+          <span class="sensor-name">Gyroscope — roll, pitch, yaw</span>
+          <span class="sensor-badge">Gyroscope Test</span>
+        </div>
+        <div class="sensor-row">
+          <span class="sensor-icon">�</span>
+          <span class="sensor-name">Accelerometer + Gyroscope — live scrolling charts</span>
+          <span class="sensor-badge">Sensor Skeleton</span>
+        </div>
+        <div class="sensor-row">
+          <span class="sensor-icon">📡</span>
+          <span class="sensor-name">PeerJS — P2P real-time data</span>
+          <span class="sensor-badge">All games</span>
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div>Built with PeerJS · Works on iOS &amp; Android 📱</div>
+      <div style="font-size:12px;margin-top:4px">Real-time P2P — no round-trips to server!</div>
+      <div style="font-size:12px;margin-top:8px"><a href="/docs" style="color:inherit;font-weight:800">📖 Docs</a></div>
+    </footer>
+  </div>
+</body>
+</html>

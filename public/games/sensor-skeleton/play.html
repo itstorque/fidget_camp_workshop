@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>📊 Sensor Skeleton</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    html, body { height: 100%; overflow: hidden; background: #0a0a0a; }
+
+    .play-layout {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      height: 100dvh;
+      background: #0a0a0a;
+    }
+
+    .play-topbar {
+      background: #1a1a1a;
+      color: white;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      border-bottom: 1px solid #333;
+    }
+
+    .play-topbar-title { font-size: 15px; font-weight: 900; }
+
+    .play-topbar-badge {
+      background: rgba(96,165,250,0.15);
+      border-radius: 20px;
+      padding: 3px 12px;
+      font-size: 13px;
+      font-weight: 800;
+      max-width: 130px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: #60a5fa;
+    }
+
+    .play-middle {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      padding: 16px;
+      background: #0a0a0a;
+    }
+
+    .sensor-box {
+      background: #1a1a1a;
+      border-radius: 16px;
+      border: 2px solid #333;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .sensor-box-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .sensor-box-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: #ccc;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    .sensor-legend {
+      display: flex;
+      gap: 10px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .legend-item { display: flex; align-items: center; gap: 4px; }
+    .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+    .sensor-values {
+      display: flex;
+      gap: 10px;
+      margin-top: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .sensor-values span { flex: 1; text-align: center; }
+
+    canvas {
+      width: 100%;
+      flex: 1;
+      min-height: 0;
+      border-radius: 10px;
+      background: #0a0a0a;
+    }
+
+    .status-strip {
+      flex-shrink: 0;
+      padding: 10px 16px;
+      padding-bottom: max(10px, env(safe-area-inset-bottom));
+      background: #1a1a1a;
+      border-top: 1px solid #333;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: #666;
+    }
+
+    .status-strip.live { color: #4ade80; }
+  </style>
+</head>
+<body>
+
+  <!-- ======= NAME ENTRY ======= -->
+  <div class="overlay center" id="name-overlay">
+    <div class="overlay-card">
+      <span class="overlay-icon">📱</span>
+      <h2 class="overlay-title">Join the Room</h2>
+      <p class="overlay-desc">What should we call you?</p>
+      <input
+        type="text"
+        class="text-input"
+        id="player-name-input"
+        placeholder="Your name 😄"
+        maxlength="20"
+        autocomplete="off"
+        autocorrect="off"
+        spellcheck="false"
+      >
+      <button class="btn btn-primary btn-full" id="join-btn">Let's Go! 🎮</button>
+    </div>
+  </div>
+
+  <!-- ======= MOTION PERMISSION (iOS 13+) ======= -->
+  <div class="overlay center hidden" id="permission-overlay">
+    <div class="overlay-card">
+      <span class="overlay-icon">📊</span>
+      <h2 class="overlay-title">Allow Motion?</h2>
+      <p class="overlay-desc">
+        This page reads your phone's accelerometer and gyroscope.
+        Please tap <strong>Allow</strong> when prompted.
+      </p>
+      <button class="btn btn-primary btn-full" id="permission-btn">
+        Enable Sensors 📱
+      </button>
+    </div>
+  </div>
+
+  <!-- ======= CONNECTING ======= -->
+  <div class="overlay center hidden" id="connecting-overlay">
+    <div class="overlay-card">
+      <span class="overlay-icon spinner">🌀</span>
+      <h2 class="overlay-title">Connecting...</h2>
+      <p class="overlay-desc" id="connecting-msg">Joining the room</p>
+    </div>
+  </div>
+
+  <!-- ======= MAIN PLAY UI ======= -->
+  <div class="play-layout hidden" id="play-ui">
+    <div class="play-topbar">
+      <span class="play-topbar-title">📊 Sensor Skeleton</span>
+      <span class="play-topbar-badge" id="topbar-name">You</span>
+    </div>
+
+    <div class="play-middle">
+      <!-- Accelerometer box -->
+      <div class="sensor-box">
+        <div class="sensor-box-header">
+          <span class="sensor-box-title">📳 Accelerometer</span>
+          <div class="sensor-legend">
+            <span class="legend-item"><span class="legend-dot" style="background:#f87171"></span>X</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#4ade80"></span>Y</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#60a5fa"></span>Z</span>
+          </div>
+        </div>
+        <canvas id="accel-canvas"></canvas>
+        <div class="sensor-values">
+          <span id="accel-x" style="color:#f87171">x: 0.0</span>
+          <span id="accel-y" style="color:#4ade80">y: 0.0</span>
+          <span id="accel-z" style="color:#60a5fa">z: 0.0</span>
+        </div>
+      </div>
+
+      <!-- Gyroscope box -->
+      <div class="sensor-box">
+        <div class="sensor-box-header">
+          <span class="sensor-box-title">🌀 Gyroscope (orientation)</span>
+          <div class="sensor-legend">
+            <span class="legend-item"><span class="legend-dot" style="background:#fbbf24"></span>α</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#a78bfa"></span>β</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#fb923c"></span>γ</span>
+          </div>
+        </div>
+        <canvas id="gyro-canvas"></canvas>
+        <div class="sensor-values">
+          <span id="gyro-alpha" style="color:#fbbf24">α: 0.0°</span>
+          <span id="gyro-beta" style="color:#a78bfa">β: 0.0°</span>
+          <span id="gyro-gamma" style="color:#fb923c">γ: 0.0°</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="status-strip" id="status-strip">Waiting for sensor data...</div>
+  </div>
+
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <script src="/js/device-stream.js"></script>
+  <script>
+    // =====================
+    // PARAMS & GUARD
+    // =====================
+    const params = new URLSearchParams(location.search);
+    const hostPeerId = params.get('peer');
+    const roomId = params.get('room');
+
+    if (!hostPeerId || !roomId) {
+      location.href = '/rooms?game=sensor-skeleton';
+    }
+
+    // =====================
+    // STATE
+    // =====================
+    let peer = null;
+    let hostConn = null;
+    let playerName = '';
+    let deviceStreamHandle = null;
+    let accelPlot = null;
+    let gyroPlot = null;
+
+    // =====================
+    // PEER INIT (used only to identify this device / notify the host;
+    // all sensor data flows to the server via /api/devices/:room)
+    // =====================
+    function initPeer(name) {
+      playerName = name;
+      document.getElementById('topbar-name').textContent = name;
+
+      const peerConfig = {
+        host: location.hostname,
+        port: parseInt(location.port) || (location.protocol === 'https:' ? 443 : 80),
+        path: '/peerjs',
+        debug: 0
+      };
+
+      peer = new Peer(undefined, peerConfig);
+
+      peer.on('open', () => connectToHost());
+
+      peer.on('error', (err) => {
+        console.warn('PeerJS local error, trying cloud:', err.type);
+        peer.destroy();
+        peer = new Peer(undefined, { debug: 0 });
+        peer.on('open', () => connectToHost());
+        peer.on('error', (e) => showFatalError('Could not connect: ' + e.type));
+      });
+    }
+
+    function connectToHost() {
+      showOverlay('connecting-overlay');
+      document.getElementById('connecting-msg').textContent = 'Joining room ' + (roomId || '…');
+
+      hostConn = peer.connect(hostPeerId, { reliable: true, serialization: 'json' });
+
+      const timeout = setTimeout(() => {
+        showFatalError('Could not reach host. Check that the room is still open.');
+      }, 10000);
+
+      hostConn.on('open', () => {
+        clearTimeout(timeout);
+        hostConn.send({ type: 'join', name: playerName });
+        requestSensorPermission();
+      });
+
+      hostConn.on('close', () => {});
+      hostConn.on('error', (err) => {
+        clearTimeout(timeout);
+        showFatalError('Connection error: ' + err);
+      });
+    }
+
+    // =====================
+    // SENSOR PERMISSION + LOCAL PLOTTING + STREAMING
+    // =====================
+    async function requestSensorPermission() {
+      const needsMotionPermission = typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function';
+      const needsOrientationPermission = typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function';
+
+      if (needsMotionPermission || needsOrientationPermission) {
+        showOverlay('permission-overlay');
+        document.getElementById('permission-btn').addEventListener('click', async () => {
+          try {
+            if (needsMotionPermission) {
+              const result = await DeviceMotionEvent.requestPermission();
+              if (result !== 'granted') {
+                showFatalError('Motion permission denied. Please enable Motion & Fitness in iOS Settings.');
+                return;
+              }
+            }
+            if (needsOrientationPermission) {
+              await DeviceOrientationEvent.requestPermission();
+            }
+            beginPlayUI();
+          } catch (e) {
+            showFatalError('Could not request sensor permission: ' + e.message);
+          }
+        }, { once: true });
+        return;
+      }
+
+      beginPlayUI();
+    }
+
+    function beginPlayUI() {
+      showOverlay(null);
+      document.getElementById('play-ui').classList.remove('hidden');
+
+      accelPlot = createSensorPlot(document.getElementById('accel-canvas'), [
+        { key: 'x', color: '#f87171' },
+        { key: 'y', color: '#4ade80' },
+        { key: 'z', color: '#60a5fa' }
+      ]);
+
+      gyroPlot = createSensorPlot(document.getElementById('gyro-canvas'), [
+        { key: 'alpha', color: '#fbbf24' },
+        { key: 'beta', color: '#a78bfa' },
+        { key: 'gamma', color: '#fb923c' }
+      ]);
+
+      // Streams to the server continuously; onSample fires on every raw
+      // reading so we can plot our own values locally before they're sent.
+      deviceStreamHandle = startDeviceStreaming({
+        roomId,
+        deviceId: peer.id,
+        name: playerName,
+        onSample: (latest) => {
+          accelPlot.push(latest.motion);
+          gyroPlot.push(latest.orientation);
+          updateReadout(latest);
+        }
+      });
+
+      const strip = document.getElementById('status-strip');
+      strip.textContent = '🟢 Streaming live to host';
+      strip.classList.add('live');
+    }
+
+    function updateReadout(latest) {
+      document.getElementById('accel-x').textContent = 'x: ' + latest.motion.x.toFixed(1);
+      document.getElementById('accel-y').textContent = 'y: ' + latest.motion.y.toFixed(1);
+      document.getElementById('accel-z').textContent = 'z: ' + latest.motion.z.toFixed(1);
+      document.getElementById('gyro-alpha').textContent = 'α: ' + latest.orientation.alpha.toFixed(1) + '°';
+      document.getElementById('gyro-beta').textContent = 'β: ' + latest.orientation.beta.toFixed(1) + '°';
+      document.getElementById('gyro-gamma').textContent = 'γ: ' + latest.orientation.gamma.toFixed(1) + '°';
+    }
+
+    window.addEventListener('beforeunload', () => deviceStreamHandle?.stop());
+
+    // =====================
+    // OVERLAY HELPERS
+    // =====================
+    function showOverlay(id) {
+      document.querySelectorAll('.overlay').forEach(el => el.classList.add('hidden'));
+      if (id) document.getElementById(id).classList.remove('hidden');
+    }
+
+    function showFatalError(message) {
+      showOverlay(null);
+      document.getElementById('play-ui').classList.add('hidden');
+      alert(message);
+    }
+
+    // =====================
+    // NAME ENTRY
+    // =====================
+    document.getElementById('join-btn').addEventListener('click', () => {
+      const name = document.getElementById('player-name-input').value.trim();
+      if (!name) { document.getElementById('player-name-input').focus(); return; }
+      document.getElementById('name-overlay').classList.add('hidden');
+      initPeer(name);
+    });
+
+    document.getElementById('player-name-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('join-btn').click();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📖 Docs — Sensor Games</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    body { user-select: text; -webkit-user-select: text; }
+
+    .docs-wrap {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 24px 20px 60px;
+    }
+
+    .docs-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .docs-header h1 {
+      font-size: 26px;
+      font-weight: 900;
+    }
+
+    .docs-header p {
+      color: var(--text-muted);
+      font-weight: 700;
+      margin-top: 4px;
+      font-size: 14px;
+    }
+
+    .back-link {
+      color: var(--text-muted);
+      font-weight: 800;
+      text-decoration: none;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    .copy-btn {
+      background: linear-gradient(135deg, var(--purple), var(--pink));
+      color: white;
+      border: none;
+      font-weight: 900;
+      padding: 12px 20px;
+      border-radius: 14px;
+      cursor: pointer;
+      font-family: 'Nunito', sans-serif;
+      font-size: 14px;
+      box-shadow: var(--shadow);
+      transition: transform 0.15s;
+      white-space: nowrap;
+    }
+
+    .copy-btn:active { transform: scale(0.96); }
+    .copy-btn.copied { background: linear-gradient(135deg, var(--green), #22c55e); }
+
+    section.doc-section {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 20px 22px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .doc-section h2 {
+      font-size: 17px;
+      font-weight: 900;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .doc-section h3 {
+      font-size: 14px;
+      font-weight: 800;
+      margin: 14px 0 6px;
+      color: var(--purple-light);
+    }
+
+    .doc-section p, .doc-section li {
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .doc-section ul, .doc-section ol {
+      margin: 6px 0 6px 20px;
+    }
+
+    .doc-section code {
+      background: rgba(255,255,255,0.08);
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      color: #ffb37f;
+    }
+
+    pre.code-block {
+      background: #0a0a0a;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      overflow-x: auto;
+      font-size: 12.5px;
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      color: #e5e7eb;
+      margin: 8px 0;
+      line-height: 1.5;
+    }
+
+    table.endpoint-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 8px 0;
+      font-size: 13px;
+    }
+
+    table.endpoint-table th, table.endpoint-table td {
+      text-align: left;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    table.endpoint-table th {
+      color: var(--text-muted);
+      font-weight: 800;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: .05em;
+    }
+
+    .method {
+      font-weight: 900;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      display: inline-block;
+    }
+    .method.get { background: rgba(74,222,128,0.15); color: #4ade80; }
+    .method.post { background: rgba(96,165,250,0.15); color: #60a5fa; }
+    .method.patch { background: rgba(251,191,36,0.15); color: #fbbf24; }
+    .method.delete { background: rgba(248,113,113,0.15); color: #f87171; }
+
+    .callout {
+      background: rgba(255,140,60,0.1);
+      border: 1px solid rgba(255,140,60,0.3);
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 13.5px;
+      font-weight: 700;
+      margin: 10px 0;
+      color: #ffb37f;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--green);
+      color: #0a0a0a;
+      font-weight: 900;
+      padding: 10px 20px;
+      border-radius: 14px;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.25s;
+      z-index: 100;
+      font-size: 14px;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+  <div class="docs-wrap">
+    <div class="docs-header">
+      <div>
+        <a href="/" class="back-link">← Back to games</a>
+        <h1>📖 Sensor Games Docs</h1>
+        <p>Everything a new user (or an LLM helping you) needs to know.</p>
+      </div>
+      <button class="copy-btn" id="copy-btn">📋 Copy for LLM</button>
+    </div>
+
+    <section class="doc-section">
+      <h2>🌀 What is this?</h2>
+      <p>
+        Sensor Games is a small Node/Express site for playing real-time multiplayer games that use a
+        phone's motion sensors (accelerometer, gyroscope/orientation). One person <strong>hosts</strong> a
+        room on a big screen or their own phone; everyone else <strong>joins</strong> the room from their
+        own phone browser. Gameplay data flows two ways:
+      </p>
+      <ul>
+        <li><strong>PeerJS (WebRTC, P2P)</strong> — low-latency game-logic messages directly between each player and the host (join, round-start, commit, scores, etc).</li>
+        <li><strong>HTTP endpoints on the server</strong> — room discovery/lobby (<code>/api/rooms</code>) and continuous raw sensor streaming (<code>/api/devices</code>), described below.</li>
+      </ul>
+    </section>
+
+    <section class="doc-section">
+      <h2>🎮 Available games</h2>
+      <h3>🎯 Gyroscope Test</h3>
+      <p>A target roll angle appears. Tilt your phone to match it, then tap to lock in. Closest angle wins; speed breaks ties.</p>
+      <h3>🎼 Instrument Symphony</h3>
+      <p>Each player is assigned a random instrument. Their live accelerometer motion becomes a voice in the host's audio mix.</p>
+      <h3>📊 Sensor Skeleton</h3>
+      <p>
+        A minimal starter/reference game. The play screen plots the player's own accelerometer and
+        gyroscope values live (before anything is sent), while continuously streaming the same data to
+        the server. The host screen polls the server and renders a live scrolling chart per player.
+        Use this as a template for building new sensor-driven games.
+      </p>
+    </section>
+
+    <section class="doc-section">
+      <h2>🕹️ How to host &amp; join a room</h2>
+      <ol>
+        <li>Open the site's homepage (<code>/</code>) and pick a game, or go straight to <code>/rooms?game=&lt;game-id&gt;</code>.</li>
+        <li>The host taps <strong>Host</strong>, names the room, and a short room code + PeerJS host id are registered via <code>POST /api/rooms</code>.</li>
+        <li>Players open <code>/rooms?game=&lt;game-id&gt;</code>, see the room in the live list (polled every 5s from <code>GET /api/rooms</code>), and tap it to join.</li>
+        <li>Joining opens a PeerJS connection directly to the host and navigates to that game's <code>play.html?peer=&lt;hostPeerId&gt;&amp;room=&lt;roomId&gt;</code>.</li>
+        <li>The host's room is removed (<code>DELETE /api/rooms/:roomId</code>) when the host closes the tab or ends the game.</li>
+      </ol>
+      <div class="callout">
+        ⚠️ <strong>HTTPS required for sensors on iOS/modern browsers.</strong> <code>DeviceMotionEvent</code> /
+        <code>DeviceOrientationEvent</code> (and their permission prompts) only work in a secure context —
+        <code>https://</code> or <code>http://localhost</code>. Testing over a plain LAN IP
+        (e.g. <code>http://192.168.1.20:3000</code>) will silently skip the permission prompt and no sensor
+        data will flow. Use a tunnel such as <a href="https://ngrok.com" style="color:#ffb37f">ngrok</a>
+        (<code>ngrok http 3000</code>) to get an HTTPS URL for phone testing.
+      </div>
+    </section>
+
+    <section class="doc-section">
+      <h2>📡 Sensor streaming API</h2>
+      <p>
+        Independent of any particular game's PeerJS messages, every play screen continuously streams raw
+        sensor readings to the server once a room is joined and sensor permission is granted. This lets a
+        host — or any other tool — read everyone's live sensor data over plain HTTP, without needing a
+        PeerJS connection.
+      </p>
+      <table class="endpoint-table">
+        <tr><th>Method</th><th>Path</th><th>Description</th></tr>
+        <tr>
+          <td><span class="method post">POST</span></td>
+          <td><code>/api/devices/:room</code></td>
+          <td>Upsert one device's latest sensor reading for a room.</td>
+        </tr>
+        <tr>
+          <td><span class="method get">GET</span></td>
+          <td><code>/api/devices/:room</code></td>
+          <td>Array of every device's latest reading in that room.</td>
+        </tr>
+        <tr>
+          <td><span class="method get">GET</span></td>
+          <td><code>/api/devices/all</code></td>
+          <td>Object of <code>{ roomId: [devices...] }</code> for every room.</td>
+        </tr>
+      </table>
+      <p>POST body shape:</p>
+      <pre class="code-block">{
+  "deviceId": "peer-id-or-any-stable-id",
+  "name": "Player name",
+  "orientation": { "alpha": 0, "beta": 0, "gamma": 0 },
+  "motion":      { "x": 0, "y": 0, "z": 0 },
+  "rotationRate": { "alpha": 0, "beta": 0, "gamma": 0 }
+}</pre>
+      <p>
+        Devices that stop posting for 15 seconds are automatically dropped (player left / closed tab).
+        The shared helper <code>public/js/device-stream.js</code> wraps this:
+      </p>
+      <pre class="code-block">// On a play.html page, after sensor permission is granted:
+const handle = startDeviceStreaming({
+  roomId, deviceId: peer.id, name: playerName,
+  onSample: (latest) => { /* plot latest.motion / latest.orientation locally */ }
+});
+handle.stop(); // when leaving
+
+// On a host.html page:
+const poll = pollRoomDevices(roomId, (deviceList) => { /* render everyone's data */ });
+poll.stop();
+
+// Reusable scrolling canvas chart used by Sensor Skeleton:
+const plot = createSensorPlot(canvasEl, [
+  { key: 'x', color: '#f87171' }, { key: 'y', color: '#4ade80' }, { key: 'z', color: '#60a5fa' }
+]);
+plot.push({ x, y, z });</pre>
+    </section>
+
+    <section class="doc-section">
+      <h2>🏠 Room lobby API</h2>
+      <table class="endpoint-table">
+        <tr><th>Method</th><th>Path</th><th>Description</th></tr>
+        <tr>
+          <td><span class="method get">GET</span></td>
+          <td><code>/api/rooms?game=&lt;id&gt;</code></td>
+          <td>List open rooms, optionally filtered by game.</td>
+        </tr>
+        <tr>
+          <td><span class="method post">POST</span></td>
+          <td><code>/api/rooms</code></td>
+          <td>Create a room: <code>{ name, game, hostPeerId }</code> → <code>{ roomId }</code>.</td>
+        </tr>
+        <tr>
+          <td><span class="method patch">PATCH</span></td>
+          <td><code>/api/rooms/:roomId</code></td>
+          <td>Update <code>playerCount</code> and refresh the room's heartbeat.</td>
+        </tr>
+        <tr>
+          <td><span class="method delete">DELETE</span></td>
+          <td><code>/api/rooms/:roomId</code></td>
+          <td>Close a room (called on host disconnect / end game).</td>
+        </tr>
+      </table>
+      <p>Rooms are held in memory and expire automatically if not heartbeated (PATCH) within 60 seconds.</p>
+    </section>
+
+    <section class="doc-section">
+      <h2>🗂️ Project structure</h2>
+      <pre class="code-block">server.js                  Express app, room API, device sensor API, PeerJS server (/peerjs)
+public/
+  index.html                Game picker / homepage
+  rooms.html                Room lobby (host/join) for a given ?game=
+  docs.html                 This page
+  js/device-stream.js       Shared sensor streaming + polling + canvas plotting helpers
+  css/style.css             Shared dark theme styles
+  games/&lt;game-id&gt;/
+    host.html               Host screen: creates room, runs game logic, shows players
+    play.html               Player screen: joins room, reads sensors, plays the game</pre>
+    </section>
+
+    <section class="doc-section">
+      <h2>➕ Adding a new game</h2>
+      <ol>
+        <li>Create <code>public/games/&lt;game-id&gt;/host.html</code> and <code>play.html</code> (copy Sensor Skeleton as a starting point).</li>
+        <li>Register the game in <code>rooms.html</code>'s <code>GAME_META</code> map (<code>name</code>, <code>hostPath</code>, <code>playPath</code>).</li>
+        <li>Add a card for it on <code>index.html</code>.</li>
+        <li>Host creates the room via <code>POST /api/rooms</code> with a unique <code>game</code> id; players discover it via <code>GET /api/rooms?game=...</code>.</li>
+        <li>Use PeerJS for real-time game logic between players and host, and/or the <code>/api/devices</code> endpoints + <code>device-stream.js</code> helpers for raw sensor streaming/plotting.</li>
+      </ol>
+    </section>
+  </div>
+
+  <div class="toast" id="toast">✅ Copied instructions to clipboard!</div>
+
+  <script>
+    function buildLlmText() {
+      const title = document.title;
+      const sections = Array.from(document.querySelectorAll('.doc-section')).map((section) => {
+        return section.innerText.trim();
+      });
+      return [
+        `# ${title.replace('📖 ', '')}`,
+        '',
+        'The following is documentation for a small Node/Express + PeerJS site for real-time',
+        'multiplayer games driven by phone motion sensors. Use it to understand the codebase,',
+        'its HTTP API, and conventions before making changes or building a new game.',
+        '',
+        ...sections.map((s) => s + '\n')
+      ].join('\n');
+    }
+
+    document.getElementById('copy-btn').addEventListener('click', async () => {
+      const text = buildLlmText();
+      const btn = document.getElementById('copy-btn');
+      const toast = document.getElementById('toast');
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch (e) {
+        // Fallback for browsers without Clipboard API permission
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        try { document.execCommand('copy'); } catch (e2) {}
+        document.body.removeChild(textarea);
+      }
+      btn.textContent = '✅ Copied!';
+      btn.classList.add('copied');
+      toast.classList.add('show');
+      setTimeout(() => {
+        btn.textContent = '📋 Copy for LLM';
+        btn.classList.remove('copied');
+        toast.classList.remove('show');
+      }, 2000);
+    });
+  </script>
+</body>
+</html>

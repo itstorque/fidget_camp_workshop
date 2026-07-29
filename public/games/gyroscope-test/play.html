@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>🎯 Gyroscope Test</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    /* Full-screen play layout - BLACK theme */
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      background: #0a0a0a;
+    }
+
+    .play-layout {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      height: 100dvh;
+      background: #0a0a0a;
+    }
+
+    /* Top bar */
+    .play-topbar {
+      background: #1a1a1a;
+      color: white;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      border-bottom: 1px solid #333;
+    }
+
+    .play-topbar-title { font-size: 15px; font-weight: 900; }
+
+    .play-topbar-badge {
+      background: rgba(255,140,60,0.15);
+      border-radius: 20px;
+      padding: 3px 12px;
+      font-size: 13px;
+      font-weight: 800;
+      max-width: 130px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: #ff8c3c;
+    }
+
+    /* Middle scrollable area */
+    .play-middle {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      background: #0a0a0a;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Compass indicator */
+    .compass-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      width: 100%;
+    }
+
+
+    .compass-dial {
+      width: 240px;
+      height: 240px;
+      border-radius: 50%;
+      background: #1a1a1a;
+      border: 3px solid #333;
+      position: relative;
+      box-shadow: 0 0 40px rgba(255,140,60,0.2);
+      overflow: hidden;
+      isolation: isolate;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+
+    .compass-center {
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      background: #ff8c3c;
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+    }
+
+    /* Horizontal needle rotating around dial center */
+    .compass-needle {
+      position: absolute;
+      width: 160px;
+      height: 4px;
+      background: linear-gradient(90deg, #ff6b35, #ff8c3c, #ff6b35);
+      top: 50%;
+      left: 50%;
+      transform-origin: center center;
+      translate: -50% -50%;
+      border-radius: 2px;
+      box-shadow: 0 0 12px rgba(255,140,60,0.6);
+      transition: transform 0.08s ease-out;
+      z-index: 4;
+      will-change: transform;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+
+    .compass-target-ring {
+      position: absolute;
+      width: 160px;
+      height: 160px;
+      border: 2px dashed #555;
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .compass-label {
+      position: absolute;
+      font-size: 11px;
+      font-weight: 700;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .compass-label.left-neg {
+      left: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #ff6b35;
+      font-size: 10px;
+    }
+
+    .compass-label.right-pos {
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #4ade80;
+      font-size: 10px;
+    }
+
+    .compass-status {
+      position: absolute;
+      bottom: 22px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 13px;
+      font-weight: 700;
+      color: #ff8c3c;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .compass-debug {
+      position: absolute;
+      bottom: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 10px;
+      font-weight: 600;
+      color: #555;
+      text-align: center;
+      white-space: nowrap;
+      display: none;
+    }
+
+    /* Committed players (shown after someone commits) */
+    .committed-section {
+      padding: 12px 14px 0;
+      flex-shrink: 0;
+      width: 100%;
+    }
+
+    .committed-label {
+      font-size: 11px;
+      font-weight: 800;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+
+    .committed-chips-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: center;
+    }
+
+    .c-chip {
+      background: #1a1a1a;
+      border-radius: 20px;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      border: 2px solid #333;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: #ccc;
+    }
+
+    .c-chip.me {
+      border-color: #ff8c3c;
+      color: #ff8c3c;
+    }
+
+
+    /* Bottom commit button */
+    .commit-area {
+      flex-shrink: 0;
+      padding: 12px 14px;
+      padding-bottom: max(12px, env(safe-area-inset-bottom));
+      background: #1a1a1a;
+      border-top: 1px solid #333;
+    }
+
+    .commit-btn {
+      width: 100%;
+      padding: 18px;
+      font-size: 20px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #ff8c3c, #ff6b35);
+      color: white;
+      border: none;
+      font-family: 'Nunito', sans-serif;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 6px 26px rgba(255,140,60,0.4);
+      transition: all 0.18s;
+      animation: pulse-glow-warm 2.4s ease-in-out infinite;
+    }
+
+    .commit-btn:active { transform: scale(0.97); }
+
+    .commit-btn.locked {
+      background: linear-gradient(135deg, #555, #333);
+      box-shadow: none;
+      animation: none;
+    }
+
+    .commit-btn:disabled {
+      background: #333;
+      color: #666;
+      box-shadow: none;
+      animation: none;
+      cursor: default;
+    }
+
+    @keyframes pulse-glow-warm {
+      0%, 100% { box-shadow: 0 6px 26px rgba(255,140,60,0.4); }
+      50%       { box-shadow: 0 8px 36px rgba(255,140,60,0.7); }
+    }
+
+    /* Timer strip at top during a round */
+    .play-timer-bar {
+      height: 4px;
+      background: var(--border);
+      flex-shrink: 0;
+    }
+
+    .play-timer-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--green), var(--cyan));
+      transition: width 0.12s linear;
+    }
+
+    .play-timer-fill.urgent {
+      background: linear-gradient(90deg, var(--orange), var(--red));
+    }
+
+    /* Overlay tweaks for play page */
+    .overlay-card small {
+      font-size: 13px;
+      color: #666;
+      font-weight: 600;
+    }
+
+    .overlay-card {
+      background: #1a1a1a;
+      color: #ccc;
+      border-radius: 24px;
+    }
+
+    .overlay-title {
+      color: white;
+    }
+
+    .overlay-desc {
+      color: #999;
+    }
+
+    .results-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin: 12px 0;
+      max-height: 280px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .result-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #0a0a0a;
+      border-radius: 12px;
+      padding: 10px 14px;
+    }
+
+    .result-rank { font-size: 22px; width: 30px; text-align: center; }
+
+    .result-name {
+      flex: 1;
+      font-weight: 800;
+      font-size: 15px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: #ccc;
+    }
+
+    .result-nums { text-align: right; }
+
+    .result-angle {
+      font-size: 14px;
+      font-weight: 700;
+      color: #888;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .result-delta {
+      font-size: 15px;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .delta-good { color: #4ade80; }
+    .delta-ok   { color: #fbbf24; }
+    .delta-bad  { color: #f87171; }
+  </style>
+</head>
+<body>
+
+  <!-- ======= NAME ENTRY ======= -->
+  <div class="overlay center" id="name-overlay">
+    <div class="overlay-card">
+      <span class="overlay-icon">📱</span>
+      <h2 class="overlay-title">Join the Game</h2>
+      <p class="overlay-desc">What should we call you?</p>
+      <input
+        type="text"
+        class="text-input"
+        id="player-name-input"
+        placeholder="Your name 😄"
+        maxlength="20"
+        autocomplete="off"
+        autocorrect="off"
+        spellcheck="false"
+      >
+      <button class="btn btn-primary btn-full" id="join-btn">Let's Go! 🎮</button>
+    </div>
+  </div>
+
+  <!-- ======= MOTION PERMISSION (iOS 13+) ======= -->
+  <div class="overlay center hidden" id="permission-overlay">
+    <div class="overlay-card">
+      <span class="overlay-icon">🌀</span>
+      <h2 class="overlay-title">Allow Motion?</h2>
+      <p class="overlay-desc">
+        This game reads your phone's gyroscope to detect tilt angle.
+        Please tap <strong>Allow</strong> when prompted.
+      </p>
+      <button class="btn btn-primary btn-full" id="permission-btn">
+        Enable Gyroscope 📱
+      </button>
+    </div>
+  </div>
+
+  <!-- ======= CONNECTING ======= -->
+  <div class="overlay center hidden" id="connecting-overlay">
+    <div class="overlay-card">
+      <span class="overlay-icon spinner">🌀</span>
+      <h2 class="overlay-title">Connecting...</h2>
+      <p class="overlay-desc" id="connecting-msg">Joining the room</p>
+    </div>
+  </div>
+
+  <!-- ======= LOBBY (waiting for round) ======= -->
+  <div class="overlay center hidden" id="lobby-overlay">
+    <div class="overlay-card">
+      <span class="overlay-icon">⏳</span>
+      <h2 class="overlay-title">You're In!</h2>
+      <p class="overlay-desc" id="lobby-msg">
+        Waiting for the host to start a round...
+      </p>
+      <div style="font-size:13px;color:var(--text-muted);font-weight:700">
+        Meanwhile, try tilting your phone to test the gyroscope.
+      </div>
+      <!-- Mini sensor preview while waiting -->
+      <div style="margin-top:16px;display:flex;gap:8px">
+        <div style="flex:1;background:var(--bg);border-radius:12px;padding:10px;text-align:center">
+          <div style="font-size:11px;font-weight:800;color:var(--text-muted);text-transform:uppercase">Roll γ</div>
+          <div style="font-size:20px;font-weight:900;color:var(--purple);font-variant-numeric:tabular-nums" id="lobby-roll">—</div>
+        </div>
+        <div style="flex:1;background:var(--bg);border-radius:12px;padding:10px;text-align:center">
+          <div style="font-size:11px;font-weight:800;color:var(--text-muted);text-transform:uppercase">Pitch β</div>
+          <div style="font-size:20px;font-weight:900;color:var(--purple);font-variant-numeric:tabular-nums" id="lobby-pitch">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======= RESULTS ======= -->
+  <div class="overlay center hidden" id="results-overlay">
+    <div class="overlay-card">
+      <span class="overlay-icon" id="result-icon">🎯</span>
+      <h2 class="overlay-title" id="result-title">Round Over!</h2>
+      <p class="overlay-desc" id="result-subtitle">Target was —°</p>
+      <div class="results-list" id="results-list"></div>
+      <p style="margin-top:12px;font-size:13px;color:var(--text-muted);font-weight:700">
+        Waiting for the host to start next round...
+      </p>
+    </div>
+  </div>
+
+  <!-- ======= MAIN PLAY UI ======= -->
+  <div class="play-layout hidden" id="play-ui">
+
+    <!-- Top bar -->
+    <div class="play-topbar">
+      <span class="play-topbar-title">🎯 Gyroscope Test</span>
+      <span class="play-topbar-badge" id="topbar-name">You</span>
+    </div>
+
+    <!-- Timer bar -->
+    <div class="play-timer-bar">
+      <div class="play-timer-fill hidden" id="play-timer-fill" style="width:100%"></div>
+    </div>
+
+    <!-- Middle content -->
+    <div class="play-middle">
+
+      <!-- Compass indicator -->
+      <div class="compass-container">
+        <div class="compass-dial" id="compass-dial">
+          <div class="compass-needle" id="compass-needle"></div>
+          <div class="compass-center"></div>
+          <!-- Direction indicators -->
+          <div class="compass-label left-neg">← LEFT (−)</div>
+          <div class="compass-label right-pos">→ RIGHT (+)</div>
+          <div class="compass-status" id="compass-status">Tilt to match</div>
+          <div class="compass-debug" id="compass-debug"></div>
+        </div>
+      </div>
+
+      <!-- Committed players (shown after someone commits) -->
+      <div class="committed-section hidden" id="committed-section">
+        <div class="committed-label">🔒 Locked in</div>
+        <div class="committed-chips-row" id="committed-chips"></div>
+      </div>
+
+    </div><!-- /play-middle -->
+
+    <!-- Commit button -->
+    <div class="commit-area">
+      <button class="commit-btn" id="commit-btn" disabled>
+        Waiting for round...
+      </button>
+    </div>
+
+  </div><!-- /play-ui -->
+
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <script src="/js/device-stream.js"></script>
+  <script>
+    // =====================
+    // PARAMS & GUARD
+    // =====================
+    const params = new URLSearchParams(location.search);
+    const hostPeerId = params.get('peer');
+    const roomId     = params.get('room');
+
+    if (!hostPeerId) {
+      location.href = '/rooms?game=gyroscope-test';
+    }
+
+    // =====================
+    // STATE
+    // =====================
+    let peer            = null;
+    let hostConn        = null;
+    let playerName      = '';
+    let gameState       = 'connecting';  // connecting | lobby | playing | committed | results
+    let targetAngle     = 0;
+    let roundStartTime  = 0;
+    let roundDuration   = 15000;
+    let timerRAF        = null;
+    let hasCommitted    = false;
+    let committedList   = [];  // { name, angle, isMe }
+    let winnerName      = null;
+
+    // Current sensor values
+    const orient = { roll: 0, pitch: 0, yaw: 0 };
+    let lastSentMs = 0;
+    let deviceStreamHandle = null;
+
+    // Streams raw accelerometer/gyroscope data to the server continuously
+    // once the room has been entered and sensors are flowing, so the host
+    // (or anyone) can read it back via /api/devices/:room or /api/devices/all.
+    function beginDeviceStreaming() {
+      if (deviceStreamHandle || !peer || !roomId) return;
+      deviceStreamHandle = startDeviceStreaming({ roomId, deviceId: peer.id, name: playerName });
+    }
+
+    window.addEventListener('beforeunload', () => deviceStreamHandle?.stop());
+
+    // =====================
+    // PEER INIT
+    // =====================
+    function initPeer(name) {
+      playerName = name;
+      document.getElementById('topbar-name').textContent = name;
+
+      const peerConfig = {
+        host: location.hostname,
+        port: parseInt(location.port) || (location.protocol === 'https:' ? 443 : 80),
+        path: '/peerjs',
+        debug: 0
+      };
+
+      peer = new Peer(undefined, peerConfig);
+
+      peer.on('open', () => {
+        connectToHost();
+      });
+
+      peer.on('error', (err) => {
+        console.warn('PeerJS local error, trying cloud:', err.type);
+        peer.destroy();
+        peer = new Peer(undefined, { debug: 0 });
+        peer.on('open', () => connectToHost());
+        peer.on('error', (e) => showFatalError('Could not connect: ' + e.type));
+      });
+    }
+
+    function connectToHost() {
+      showOverlay('connecting-overlay');
+      document.getElementById('connecting-msg').textContent = 'Joining room ' + (roomId || '…');
+
+      hostConn = peer.connect(hostPeerId, { reliable: true, serialization: 'json' });
+
+      // Connection timeout
+      const timeout = setTimeout(() => {
+        showFatalError('Could not reach host. Check that the room is still open.');
+      }, 10000);
+
+      hostConn.on('open', () => {
+        clearTimeout(timeout);
+        console.log('Connected to host!');
+        hostConn.send({ type: 'join', name: playerName });
+        showOverlay('lobby-overlay');
+        gameState = 'lobby';
+        requestOrientationPermission();
+      });
+
+      hostConn.on('data', handleHostMsg);
+
+      hostConn.on('close', () => {
+        if (gameState !== 'results') {
+          showFatalError('Lost connection to the host.');
+        }
+      });
+
+      hostConn.on('error', (err) => {
+        clearTimeout(timeout);
+        showFatalError('Connection error: ' + err);
+      });
+    }
+
+    // =====================
+    // ORIENTATION PERMISSION
+    // =====================
+    let orientationSensor = null;
+    let useAbsoluteSensor = false;
+    let hasGravityMotion = false;
+
+    async function requestOrientationPermission() {
+      console.log('Requesting orientation permission...');
+      
+      // Try AbsoluteOrientationSensor first (more accurate)
+      if ('AbsoluteOrientationSensor' in window) {
+        try {
+          console.log('Attempting AbsoluteOrientationSensor...');
+          orientationSensor = new AbsoluteOrientationSensor({ frequency: 60 });
+          
+          orientationSensor.addEventListener('reading', onSensorReading);
+          orientationSensor.addEventListener('error', (event) => {
+            console.warn('Sensor error:', event.error.name);
+            // Fallback to DeviceOrientationEvent
+            useAbsoluteSensor = false;
+            orientationSensor = null;
+            startMotionFallback();
+          });
+          
+          try {
+            await orientationSensor.start();
+            console.log('AbsoluteOrientationSensor started successfully');
+            useAbsoluteSensor = true;
+            showOverlay('lobby-overlay');
+            beginDeviceStreaming();
+            return;
+          } catch (e) {
+            console.log('Sensor start failed:', e.message);
+            useAbsoluteSensor = false;
+            orientationSensor = null;
+            // Fall through to DeviceOrientationEvent
+          }
+        } catch (e) {
+          console.log('AbsoluteOrientationSensor not available:', e.message);
+        }
+      }
+      
+      // Fallback to motion/orientation events
+      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        console.log('Using DeviceOrientationEvent with permission request');
+        showOverlay('permission-overlay');
+        document.getElementById('permission-btn').addEventListener('click', async () => {
+          try {
+            const result = await DeviceOrientationEvent.requestPermission();
+            if (result === 'granted') {
+              showOverlay('lobby-overlay');
+              startMotionFallback();
+            } else {
+              showFatalError('Motion permission denied. Please allow it in iOS Settings → Privacy → Motion & Fitness.');
+            }
+          } catch (e) {
+            console.error('Permission error:', e);
+            showFatalError('Could not request motion permission: ' + e.message);
+          }
+        }, { once: true });
+      } else {
+        console.log('Using DeviceOrientationEvent (no permission needed)');
+        startMotionFallback();
+      }
+    }
+
+    function startMotionFallback() {
+      console.log('Starting motion/orientation fallback listeners');
+      window.addEventListener('devicemotion', onDeviceMotion, { passive: true });
+      window.addEventListener('deviceorientation', onDeviceOrientation, { passive: true });
+      beginDeviceStreaming();
+    }
+
+    // =====================
+    // SENSOR READING (AbsoluteOrientationSensor)
+    // =====================
+    function onSensorReading() {
+      const quat = orientationSensor.quaternion;
+      const [x, y, z, w] = quat;
+
+      // Gravity vector in device coordinates from quaternion.
+      const gx = 2 * (x * z - w * y);
+      const gy = 2 * (w * x + y * z);
+      const gz = w * w - x * x - y * y + z * z;
+
+      applyGravitySample(gx, gy, gz);
+    }
+
+    function onDeviceMotion(e) {
+      const gravity = e.accelerationIncludingGravity;
+      if (!gravity) return;
+
+      const gx = gravity.x ?? 0;
+      const gy = gravity.y ?? 0;
+      const gz = gravity.z ?? 0;
+      const magnitude = Math.hypot(gx, gy, gz);
+      if (magnitude < 0.001) return;
+
+      hasGravityMotion = true;
+      applyGravitySample(gx / magnitude, gy / magnitude, gz / magnitude);
+    }
+
+    function onDeviceOrientation(e) {
+      if (hasGravityMotion) return;
+
+      const betaRad = (e.beta || 0) * (Math.PI / 180);
+      const gammaRad = (e.gamma || 0) * (Math.PI / 180);
+      const rollRad = Math.atan2(Math.sin(gammaRad), Math.cos(betaRad) * Math.cos(gammaRad));
+
+      orient.roll = -(rollRad * (180 / Math.PI));
+      orient.pitch = e.beta ?? 0;
+      orient.yaw = e.alpha ?? 0;
+      publishOrientationSample();
+    }
+
+    function applyGravitySample(gx, gy, gz) {
+      // Angle of gravity projected onto the screen plane.
+      // 0deg means the horizon/reference line is horizontal on screen.
+      orient.roll = normalizeAngle(Math.atan2(gx, -gy) * (180 / Math.PI));
+      orient.pitch = Math.atan2(gz, Math.hypot(gx, gy)) * (180 / Math.PI);
+      orient.yaw = 0;
+      publishOrientationSample();
+    }
+
+    function publishOrientationSample() {
+      document.getElementById('lobby-roll').textContent = orient.roll.toFixed(1) + '°';
+      document.getElementById('lobby-pitch').textContent = orient.pitch.toFixed(1) + '°';
+
+      if (gameState === 'playing' && !hasCommitted) {
+        updateCompassNeedle(orient.roll);
+        document.getElementById('compass-debug').textContent = `debug: ${orient.roll.toFixed(1)}°`;
+      }
+
+      const now = Date.now();
+      if (gameState === 'playing' && !hasCommitted && now - lastSentMs >= 50) {
+        lastSentMs = now;
+        hostConn?.send({
+          type: 'orientation',
+          roll: orient.roll, pitch: orient.pitch, yaw: orient.yaw,
+          timestamp: now
+        });
+      }
+    }
+
+    function normalizeAngle(angle) {
+      let normalized = angle;
+      while (normalized <= -180) normalized += 360;
+      while (normalized > 180) normalized -= 360;
+      return normalized;
+    }
+
+    function updateCompassNeedle(angle) {
+      const needle = document.getElementById('compass-needle');
+      needle.style.transform = `rotate(${angle}deg)`;
+    }
+
+    // =====================
+    // HOST MESSAGE HANDLING
+    // =====================
+    function handleHostMsg(data) {
+      switch (data.type) {
+
+        case 'welcome':
+          // Already in lobby. If host says round is playing, enter round immediately.
+          if (data.gameState === 'playing' && data.targetAngle !== null) {
+            startPlayRound(data.targetAngle, 0, 15000);
+          }
+          break;
+
+        case 'round-start':
+          committedList = [];
+          hasCommitted  = false;
+          winnerName    = null;
+          startPlayRound(data.targetAngle, data.elapsed ?? 0, data.duration ?? 15000);
+          break;
+
+        case 'committed-so-far':
+          // Already-committed players before we joined mid-round
+          (data.players || []).forEach(p => {
+            if (!committedList.find(c => c.name === p.name)) {
+              committedList.push({ name: p.name, angle: p.angle });
+            }
+          });
+          renderCommittedChips();
+          break;
+
+        case 'player-committed':
+          if (!committedList.find(c => c.name === data.name)) {
+            committedList.push({ name: data.name, angle: data.angle });
+          }
+          renderCommittedChips();
+          break;
+
+        case 'round-end':
+          showRoundResults(data);
+          break;
+
+        case 'game-ended':
+          location.href = '/';
+          break;
+      }
+    }
+
+    // =====================
+    // ROUND FLOW
+    // =====================
+    function startPlayRound(target, elapsed, duration) {
+      targetAngle    = target;
+      roundDuration  = duration;
+      roundStartTime = Date.now() - elapsed;
+      gameState      = 'playing';
+      hasCommitted   = false;
+
+      // Show main play UI
+      hideAllOverlays();
+      document.getElementById('play-ui').classList.remove('hidden');
+
+      // Reset compass needle position
+      document.getElementById('compass-needle').style.transform = 'rotate(0deg)';
+      document.getElementById('compass-status').textContent = `Match ${Math.round(targetAngle)}°`;
+      document.getElementById('compass-debug').textContent = 'debug: —°';
+
+      // Enable commit button
+      const btn = document.getElementById('commit-btn');
+      btn.textContent = '🔒 Lock In!';
+      btn.disabled = false;
+      btn.classList.remove('locked');
+
+      // Hide committed section until someone commits
+      document.getElementById('committed-section').classList.add('hidden');
+
+      // Timer
+      const fillEl = document.getElementById('play-timer-fill');
+      fillEl.classList.remove('hidden', 'urgent');
+      fillEl.style.width = '100%';
+
+      const endTime = roundStartTime + roundDuration;
+      cancelAnimationFrame(timerRAF);
+
+      function timerTick() {
+        const remaining = endTime - Date.now();
+        const pct = Math.max(0, remaining / roundDuration * 100);
+        fillEl.style.width = `${pct}%`;
+        if (pct < 25) fillEl.classList.add('urgent');
+        if (remaining > 0) {
+          timerRAF = requestAnimationFrame(timerTick);
+        }
+      }
+      timerRAF = requestAnimationFrame(timerTick);
+    }
+
+    function commitAngle() {
+      if (hasCommitted || gameState !== 'playing') return;
+      hasCommitted = true;
+      gameState    = 'committed';
+
+      const commitAngle = orient.roll;
+
+      hostConn?.send({
+        type: 'commit',
+        roll: commitAngle, pitch: orient.pitch, yaw: orient.yaw,
+        timestamp: Date.now()
+      });
+
+      const btn = document.getElementById('commit-btn');
+      btn.textContent = '✅ Locked In!';
+      btn.disabled = true;
+      btn.classList.add('locked');
+
+      // Add self to committed list
+      committedList.push({ name: playerName, angle: commitAngle, isMe: true });
+      renderCommittedChips();
+    }
+
+    function renderCommittedChips() {
+      const section = document.getElementById('committed-section');
+      const row     = document.getElementById('committed-chips');
+
+      if (committedList.length === 0) {
+        section.classList.add('hidden');
+        return;
+      }
+
+      section.classList.remove('hidden');
+      row.innerHTML = committedList.map(c => {
+        const cls = c.isMe ? 'me' : '';
+        return `
+          <div class="c-chip ${cls}">
+            ${c.isMe ? '👤' : '👥'} ${esc(c.name)}
+          </div>`;
+      }).join('');
+    }
+
+    // =====================
+    // RESULTS
+    // =====================
+    function showRoundResults(data) {
+      cancelAnimationFrame(timerRAF);
+      gameState  = 'results';
+      winnerName = data.winner ?? null;
+
+      const iAmWinner = winnerName === playerName;
+
+      document.getElementById('result-icon').textContent    = iAmWinner ? '🏆' : winnerName ? '🎯' : '😅';
+      document.getElementById('result-title').textContent   = iAmWinner ? 'You won! 🎉' : winnerName ? `${winnerName} wins!` : 'Round over!';
+      document.getElementById('result-subtitle').textContent = `Target was ${data.targetAngle ?? targetAngle}°`;
+
+      const rankEmojis = ['🥇','🥈','🥉'];
+      const results = data.results ?? [];
+
+      document.getElementById('results-list').innerHTML = results.map((r, i) => {
+        const isMe = r.name === playerName;
+        const deltaClass = r.delta < 5 ? 'delta-good' : r.delta < 15 ? 'delta-ok' : 'delta-bad';
+        return `
+          <div class="result-row">
+            <div class="result-rank">${rankEmojis[i] ?? `#${i+1}`}</div>
+            <div class="result-name" style="${isMe ? 'color:#ff8c3c' : ''}">
+              ${esc(r.name)}${isMe ? ' 👈' : ''}
+              ${!r.committed ? '<span style="font-size:11px;color:#666">&nbsp;(no commit)</span>' : ''}
+            </div>
+            <div class="result-nums">
+              <div class="result-angle">${(r.angle ?? 0).toFixed(1)}°</div>
+              <div class="result-delta ${deltaClass}">Δ${(r.delta ?? 0).toFixed(1)}°</div>
+            </div>
+          </div>`;
+      }).join('');
+
+      document.getElementById('play-ui').classList.add('hidden');
+      showOverlay('results-overlay');
+
+      if (iAmWinner) spawnConfetti();
+    }
+
+    // =====================
+    // OVERLAY HELPERS
+    // =====================
+    function hideAllOverlays() {
+      document.querySelectorAll('.overlay').forEach(el => el.classList.add('hidden'));
+    }
+
+    function showOverlay(id) {
+      hideAllOverlays();
+      document.getElementById('play-ui').classList.add('hidden');
+      document.getElementById(id).classList.remove('hidden');
+    }
+
+    function showFatalError(msg) {
+      hideAllOverlays();
+      document.getElementById('play-ui').classList.add('hidden');
+      // Create error overlay dynamically
+      const el = document.createElement('div');
+      el.className = 'overlay center';
+      el.innerHTML = `
+        <div class="overlay-card">
+          <span class="overlay-icon">😵</span>
+          <h2 class="overlay-title">Oops!</h2>
+          <p class="overlay-desc">${esc(msg)}</p>
+          <a href="/rooms?game=gyroscope-test" class="btn btn-primary btn-full">← Back to Rooms</a>
+        </div>`;
+      document.body.appendChild(el);
+    }
+
+    // =====================
+    // CONFETTI
+    // =====================
+    function spawnConfetti() {
+      const emojis = ['🎉','✨','⭐','🌟','🎊','🏆','🎈','💫'];
+      for (let i = 0; i < 22; i++) {
+        setTimeout(() => {
+          const el = document.createElement('div');
+          el.className = 'confetti-piece';
+          el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+          el.style.left = `${Math.random() * 95}vw`;
+          el.style.animationDuration = `${1.3 + Math.random() * 1.4}s`;
+          el.style.animationName = 'confetti-fall';
+          el.style.animationFillMode = 'forwards';
+          el.style.animationTimingFunction = 'linear';
+          document.body.appendChild(el);
+          el.addEventListener('animationend', () => el.remove());
+        }, i * 90);
+      }
+    }
+
+    // =====================
+    // UTILITY
+    // =====================
+    function esc(str) {
+      const d = document.createElement('div');
+      d.textContent = String(str ?? '');
+      return d.innerHTML;
+    }
+
+    // =====================
+    // EVENT LISTENERS
+    // =====================
+    document.getElementById('join-btn').addEventListener('click', () => {
+      const name = document.getElementById('player-name-input').value.trim();
+      if (!name) {
+        document.getElementById('player-name-input').focus();
+        return;
+      }
+      showOverlay('connecting-overlay');
+      initPeer(name);
+    });
+
+    document.getElementById('player-name-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('join-btn').click();
+    });
+
+    document.getElementById('commit-btn').addEventListener('click', commitAngle);
+
+    // =====================
+    // TEST MODE - Keyboard Controls
+    // =====================
+    let testAngle = 0;
+    document.addEventListener('keydown', (e) => {
+      if (gameState === 'playing' && !hasCommitted) {
+        if (e.key === 'ArrowLeft') {
+          testAngle = Math.max(-90, testAngle - 5);
+        } else if (e.key === 'ArrowRight') {
+          testAngle = Math.min(90, testAngle + 5);
+        } else if (e.key === 'ArrowDown') {
+          testAngle = 0;
+        } else { return; }
+        orient.roll = testAngle;
+        updateCompassNeedle(testAngle);
+        document.getElementById('compass-debug').textContent = `debug: ${testAngle.toFixed(1)}°`;
+        e.preventDefault();
+      }
+    });
+  </script>
+</body>
+</html>
