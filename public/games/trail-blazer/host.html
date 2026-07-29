@@ -154,18 +154,6 @@
     let colorCounter = 0;
     let devicePollHandle = null;
 
-    // In local preview mode there's no point waiting for a room/players — just
-    // stream every device across the remote server immediately.
-    if (isLocalPreview()) {
-      devicePollHandle = pollRoomDevices(null, onDevices, 100);
-      document.getElementById('setup-overlay').classList.add('hidden');
-      document.getElementById('main-ui').classList.remove('hidden');
-      document.getElementById('room-name-display').textContent = 'Local Preview';
-      document.getElementById('room-code').textContent = 'ALL';
-      resizeCanvas();
-      requestAnimationFrame(renderLoop);
-    }
-
     // Smoothed camera state (world-space center + pixels-per-world-unit scale)
     const camera = { x: 0, y: 0, scale: 1, targetX: 0, targetY: 0, targetScale: 1 };
 
@@ -180,6 +168,18 @@
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
     window.addEventListener('resize', resizeCanvas);
+
+    // In local preview mode there's no point waiting for a room/players — just
+    // stream every device across the remote server immediately.
+    if (isLocalPreview()) {
+      devicePollHandle = pollRoomDevices(null, onDevices, 100);
+      document.getElementById('setup-overlay').classList.add('hidden');
+      document.getElementById('main-ui').classList.remove('hidden');
+      document.getElementById('room-name-display').textContent = 'Local Preview';
+      document.getElementById('room-code').textContent = 'ALL';
+      resizeCanvas();
+      requestAnimationFrame(renderLoop);
+    }
 
     function initPeer(onReady) {
       const peerConfig = getPeerConfig();

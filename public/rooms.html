@@ -129,6 +129,15 @@
     let autoRefreshTimer = null;
 
     async function loadRooms() {
+      // In local preview mode there's no real host peer running locally, so
+      // joining a remote room as a "player" wouldn't work anyway. Instead,
+      // always offer a synthetic dev room that drops straight into this
+      // game's host screen, which already streams every device from
+      // /api/devices/all with no room/player setup required.
+      if (isLocalPreview()) {
+        renderRooms([{ roomId: 'DEV', name: '🧪 Local Dev Room', playerCount: 0, isDev: true }]);
+        return;
+      }
       try {
         const res = await fetch(apiUrl(`/api/rooms?game=${encodeURIComponent(GAME_ID)}`));
         if (!res.ok) throw new Error('Bad response');
@@ -161,7 +170,7 @@
       countEl.textContent = `${rooms.length} room${rooms.length !== 1 ? 's' : ''}`;
 
       container.innerHTML = rooms.map(room => `
-        <div class="room-card" onclick="joinRoom('${esc(room.hostPeerId)}', '${esc(room.roomId)}')">
+        <div class="room-card" onclick="${room.isDev ? `location.href='${esc(meta?.hostPath || '/')}'` : `joinRoom('${esc(room.hostPeerId)}', '${esc(room.roomId)}')`}">
           <div style="flex:1;min-width:0">
             <div class="room-name">${esc(room.name)}</div>
             <div class="room-meta">
@@ -169,7 +178,7 @@
             </div>
           </div>
           <span class="room-player-count">👥 ${room.playerCount}</span>
-          <button class="btn btn-secondary" style="white-space:nowrap;padding:10px 16px">Join →</button>
+          <button class="btn btn-secondary" style="white-space:nowrap;padding:10px 16px">${room.isDev ? 'Open →' : 'Join →'}</button>
         </div>
       `).join('');
     }
