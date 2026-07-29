@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>🍾 Champagne Shake — Host</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    html, body { background: #0a0a0a; }
+    .app { background: #0a0a0a; }
+
+    /* ---------- HEADER ---------- */
+    .host-header {
+      background: #1a1a1a; color: white;
+      padding: 20px 20px 24px; text-align: center;
+      border-bottom: 1px solid #333;
+    }
+    .host-game-title {
+      font-size: 14px; font-weight: 700; opacity: 0.7; margin-bottom: 6px;
+    }
+    .host-room-name { font-size: 22px; font-weight: 900; }
+    .room-code-label {
+      font-size: 12px; font-weight: 700; opacity: 0.6;
+      margin-top: 14px; text-transform: uppercase; letter-spacing: .08em;
+    }
+    .room-code {
+      display: inline-block;
+      background: rgba(232,184,48,0.15); border-radius: 14px;
+      padding: 8px 20px; font-size: 30px; font-weight: 900;
+      letter-spacing: 0.12em; margin: 6px 0;
+      font-variant-numeric: tabular-nums; color: #e8b830;
+    }
+    .host-status-badge {
+      display: inline-block;
+      background: rgba(232,184,48,0.15); border-radius: 20px;
+      padding: 5px 14px; font-size: 13px; font-weight: 700;
+      margin-top: 10px; color: #e8b830;
+    }
+
+    /* ---------- MAIN ---------- */
+    .host-main {
+      flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+      background: #0a0a0a; padding: 16px;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .section-title {
+      font-size: 13px; font-weight: 800; color: #666;
+      text-transform: uppercase; letter-spacing: .06em;
+      margin-bottom: 10px; align-self: flex-start;
+    }
+
+    /* ---------- TIMER BANNER ---------- */
+    .timer-banner {
+      width: 100%; text-align: center;
+      padding: 16px; margin-bottom: 16px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(232,184,48,0.1), rgba(232,184,48,0.05));
+      border: 2px solid rgba(232,184,48,0.2);
+    }
+    .timer-banner.hidden { display: none; }
+    .timer-big {
+      font-size: 72px; font-weight: 900; color: #e8b830;
+      line-height: 1; font-variant-numeric: tabular-nums;
+      text-shadow: 0 0 30px rgba(232,184,48,0.3);
+    }
+    .timer-sub {
+      font-size: 14px; font-weight: 800; color: #999;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      margin-top: 4px;
+    }
+
+    /* ---------- NO PLAYERS ---------- */
+    .no-players-hint {
+      text-align: center; padding: 40px 20px;
+      color: #666; font-weight: 700; font-size: 15px;
+    }
+    .no-players-hint .hint-icon {
+      font-size: 48px; display: block; margin-bottom: 12px;
+    }
+
+    /* ---------- BOTTLE GRID ---------- */
+    .bottle-grid {
+      display: flex; flex-wrap: wrap;
+      justify-content: center; gap: 20px;
+      width: 100%; padding-bottom: 20px;
+    }
+
+    .player-slot {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 8px; min-width: 90px;
+    }
+
+    /* Bottle (host version — smaller) */
+    .h-bottle-scene {
+      position: relative; display: flex;
+      flex-direction: column; align-items: center;
+      transition: transform 0.05s linear;
+    }
+    .h-jet-container {
+      position: absolute; bottom: 100%; left: 50%;
+      transform: translateX(-50%); width: 20px;
+      pointer-events: none; overflow: visible;
+    }
+    .h-jet-stream {
+      width: 100%; height: 0;
+      background: linear-gradient(to top,
+        #e8b830 0%, #f5d060 20%, #fff8e8 50%,
+        rgba(255,248,232,0.4) 80%, transparent 100%);
+      border-radius: 40% 40% 0 0;
+      transition: height 1.8s cubic-bezier(0.22, 1.2, 0.36, 1);
+    }
+
+    .h-cork {
+      width: 14px; height: 12px;
+      background: linear-gradient(135deg, #c9a234 0%, #8B6914 100%);
+      border-radius: 2px 2px 4px 4px; margin-bottom: -1px;
+      transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+    }
+    .h-cork.popped {
+      transform: translateY(-50px) rotate(60deg); opacity: 0;
+    }
+
+    .h-bottle-foil {
+      width: 22px; height: 10px;
+      background: linear-gradient(135deg, #c9a234 0%, #f0d68a 50%, #c9a234 100%);
+      border-radius: 4px 4px 1px 1px;
+    }
+    .h-bottle-neck {
+      width: 16px; height: 30px;
+      background: linear-gradient(135deg, #1a472a 0%, #2d6b45 60%, #1a472a 100%);
+    }
+    .h-bottle-shoulder {
+      width: 52px; height: 18px;
+      background: linear-gradient(135deg, #1a472a 0%, #2d6b45 60%, #1a472a 100%);
+      border-radius: 8px 8px 0 0;
+      clip-path: polygon(22% 0%, 78% 0%, 100% 100%, 0% 100%);
+    }
+    .h-bottle-body {
+      width: 52px; height: 80px;
+      background: linear-gradient(135deg, #143a22 0%, #2d6b45 40%, #1a472a 80%, #143a22 100%);
+      border-radius: 0 0 8px 8px; position: relative; overflow: hidden;
+    }
+    .h-bottle-label {
+      position: absolute; top: 12px; left: 5px; right: 5px;
+      height: 36px;
+      background: linear-gradient(135deg, #f5e6c8 0%, #d4c090 100%);
+      border-radius: 3px; border: 1px solid #c9a234;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .h-bottle-label-text {
+      font-size: 6px; font-weight: 900; color: #1a472a;
+      text-transform: uppercase; letter-spacing: 0.08em; text-align: center;
+    }
+
+    .player-name-tag {
+      font-size: 13px; font-weight: 800; color: #ccc;
+      max-width: 90px; overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap; text-align: center;
+    }
+    .player-score-tag {
+      font-size: 18px; font-weight: 900; color: #e8b830;
+      font-variant-numeric: tabular-nums; min-height: 24px;
+    }
+    .player-rank-tag {
+      font-size: 24px; min-height: 30px;
+    }
+
+    /* ---------- RESULTS BANNER ---------- */
+    .results-banner {
+      width: 100%; text-align: center;
+      padding: 20px 16px; margin-bottom: 16px;
+      background: linear-gradient(135deg, rgba(232,184,48,0.12), rgba(232,184,48,0.04));
+      border: 2px solid rgba(232,184,48,0.25);
+      border-radius: 16px;
+    }
+    .results-banner.hidden { display: none; }
+    .results-banner-icon { font-size: 48px; display: block; margin-bottom: 8px; }
+    .results-banner-title {
+      font-size: 22px; font-weight: 900; color: white; margin-bottom: 4px;
+    }
+    .results-banner-sub {
+      font-size: 14px; font-weight: 700; color: #999;
+    }
+
+    /* ---------- COUNTDOWN OVERLAY ---------- */
+    .countdown-fullscreen {
+      position: fixed; inset: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.85); pointer-events: none;
+    }
+    .countdown-fullscreen.hidden { display: none; }
+    .countdown-number {
+      font-size: 160px; font-weight: 900; color: #e8b830;
+      text-shadow: 0 0 60px rgba(232,184,48,0.5);
+      animation: countPop 0.8s ease-out;
+    }
+    .countdown-number.go-text {
+      font-size: 72px;
+      background: linear-gradient(135deg, #e8b830, #f5d060);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    @keyframes countPop {
+      0% { transform: scale(2); opacity: 0; }
+      40% { transform: scale(0.9); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* ---------- CONTROLS ---------- */
+    .game-controls {
+      padding: 16px; background: #1a1a1a; border-top: 1px solid #333;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .btn-champagne {
+      background: linear-gradient(135deg, #c9a234 0%, #e8b830 50%, #c9a234 100%);
+      color: #1a1a1a; border: none; border-radius: 14px;
+      padding: 14px 20px; font-size: 16px; font-weight: 900;
+      font-family: inherit; cursor: pointer; width: 100%;
+      text-align: center; letter-spacing: 0.02em;
+    }
+    .btn-champagne:disabled {
+      opacity: 0.4; cursor: not-allowed;
+    }
+    .btn-champagne:active:not(:disabled) {
+      transform: scale(0.97);
+    }
+
+    /* ---------- CONFETTI ---------- */
+    .confetti-piece {
+      position: fixed; width: 8px; height: 14px;
+      pointer-events: none; z-index: 200;
+      animation: confettiFall var(--dur) ease-in forwards;
+    }
+    @keyframes confettiFall {
+      0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(100vh) rotate(var(--rot)); opacity: 0; }
+    }
+
+    /* ---------- DROPLETS ---------- */
+    .droplet {
+      position: absolute; width: 5px; height: 5px;
+      background: #f5d060; border-radius: 50%;
+      pointer-events: none;
+      animation: dropletFly var(--dur) ease-out forwards;
+      opacity: 0;
+    }
+    @keyframes dropletFly {
+      0% { transform: translate(0,0) scale(1); opacity: 1; }
+      100% { transform: translate(var(--dx), var(--dy)) scale(0.2); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Setup overlay -->
+  <div class="overlay center" id="setup-overlay">
+    <div class="overlay-card">
+      <span class="overlay-icon">🍾</span>
+      <h2 class="overlay-title">Host a Room</h2>
+      <p class="overlay-desc">Set up your <strong>Champagne Shake</strong> party!</p>
+      <input type="text" class="text-input" id="room-name-input"
+        placeholder="Room name" maxlength="40" value="Champagne Party">
+      <button class="btn" style="width:100%" id="create-room-btn">Create Room 🥂</button>
+    </div>
+  </div>
+
+  <!-- Countdown overlay -->
+  <div class="countdown-fullscreen hidden" id="countdown-overlay">
+    <div class="countdown-number" id="countdown-text">3</div>
+  </div>
+
+  <!-- Main UI -->
+  <div id="main-ui" class="hidden" style="display:flex;flex-direction:column;min-height:100vh">
+
+    <div class="host-header">
+      <div class="host-game-title">🍾 Champagne Shake</div>
+      <div class="host-room-name" id="room-name-display">—</div>
+      <div class="room-code-label">Room Code</div>
+      <div class="room-code" id="room-code">——</div>
+      <div class="host-status-badge" id="status-badge">⏳ Waiting</div>
+    </div>
+
+    <div class="host-main" id="host-main">
+      <!-- Timer (hidden until round starts) -->
+      <div class="timer-banner hidden" id="timer-banner">
+        <div class="timer-big" id="host-timer">10.0</div>
+        <div class="timer-sub" id="host-timer-label">seconds left</div>
+      </div>
+
+      <!-- Results banner (hidden until round ends) -->
+      <div class="results-banner hidden" id="results-banner">
+        <span class="results-banner-icon" id="results-banner-icon">🏆</span>
+        <div class="results-banner-title" id="results-banner-title">Winner!</div>
+        <div class="results-banner-sub" id="results-banner-sub">—</div>
+      </div>
+
+      <div class="section-title" id="players-section-title">Players (0)</div>
+
+      <div id="players-area">
+        <div class="no-players-hint">
+          <span class="hint-icon">🍾</span>
+          No players yet!<br>Share the room code.
+        </div>
+      </div>
+    </div>
+
+    <div class="game-controls" id="game-controls">
+      <button class="btn-champagne" id="start-btn" disabled>
+        Waiting for Players…
+      </button>
+      <a href="/rooms?game=champagne-shake"
+         class="btn btn-ghost"
+         style="width:100%;text-align:center;text-decoration:none">
+        ← Back to Lobby
+      </a>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <script src="/config.js"></script>
+  <script src="/js/api-config.js"></script>
+  <script src="/js/device-stream.js"></script>
+  <script>
+    const GAME_ID = 'champagne-shake';
+    const ROUND_DURATION = 10000;
+    const COUNTDOWN_SECS = 3;
+
+    // =====================
+    // STATE
+    // =====================
+    let peer = null, roomId = null, roomName = '';
+    const connections = {};  // peerId → PeerJS DataConnection
+    const players = {};      // peerId → { name, score, intensity }
+    let roundActive = false, roundStartTime = 0;
+    let timerInterval = null, shakeAnimFrame = null;
+    let gamePhase = 'lobby'; // lobby | countdown | shaking | results
+
+    // =====================
+    // PEER INIT
+    // =====================
+    function initPeer(onReady) {
+      const peerConfig = getPeerConfig();
+      peer = new Peer(undefined, peerConfig);
+      peer.on('open', (id) => onReady(id));
+      peer.on('connection', handleNewConnection);
+      peer.on('error', (err) => {
+        console.warn('PeerJS error:', err.type);
+        peer.destroy();
+        peer = new Peer(undefined, { debug: 0 });
+        peer.on('open', (id) => onReady(id));
+        peer.on('connection', handleNewConnection);
+      });
+    }
+
+    function handleNewConnection(conn) {
+      conn.on('open', () => {
+        connections[conn.peer] = conn;
+        conn.on('data', (data) => handlePlayerMsg(conn.peer, data));
+        conn.on('close', () => onPlayerLeft(conn.peer));
+        conn.on('error', () => onPlayerLeft(conn.peer));
+      });
+    }
+
+    function onPlayerLeft(peerId) {
+      delete players[peerId];
+      delete connections[peerId];
+      rebuildBottleGrid();
+      updatePlayerCount();
+    }
+
+    function handlePlayerMsg(peerId, data) {
+      if (data.type === 'join') {
+        const name = String(data.name || 'Anonymous').slice(0, 24);
+        players[peerId] = { name, score: 0, intensity: 0 };
+        rebuildBottleGrid();
+        updatePlayerCount();
+      } else if (data.type === 'score-update') {
+        if (players[peerId]) {
+          players[peerId].score = data.score || 0;
+          players[peerId].intensity = data.intensity || 0;
+        }
+      }
+    }
+
+    // =====================
+    // BROADCAST
+    // =====================
+    function broadcast(msg) {
+      Object.values(connections).forEach(conn => {
+        if (conn.open) conn.send(msg);
+      });
+    }
+
+    // =====================
+    // ROOM CREATION
+    // =====================
+    async function createRoom(hostPeerId) {
+      roomName = document.getElementById('room-name-input').value.trim() || 'Champagne Party';
+      try {
+        const res = await fetch(apiUrl('/api/rooms'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: roomName, game: GAME_ID, hostPeerId })
+        });
+        const data = await res.json();
+        roomId = data.roomId;
+        onRoomCreated();
+      } catch (e) {
+        alert('Error: ' + e.message);
+        const btn = document.getElementById('create-room-btn');
+        btn.textContent = 'Create Room 🥂';
+        btn.disabled = false;
+      }
+    }
+
+    function onRoomCreated() {
+      document.getElementById('setup-overlay').classList.add('hidden');
+      document.getElementById('main-ui').classList.remove('hidden');
+      document.getElementById('room-name-display').textContent = roomName;
+      document.getElementById('room-code').textContent = roomId;
+
+      setInterval(updateRoomPlayerCount, 15000);
+      window.addEventListener('beforeunload', () => {
+        fetch(apiUrl(`/api/rooms/${roomId}`), { method: 'DELETE', keepalive: true }).catch(() => {});
+      });
+    }
+
+    function updateRoomPlayerCount() {
+      if (!roomId) return;
+      fetch(apiUrl(`/api/rooms/${roomId}`), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerCount: Object.keys(players).length })
+      }).catch(() => {});
+    }
+
+    // =====================
+    // UI UPDATES
+    // =====================
+    function updatePlayerCount() {
+      const count = Object.keys(players).length;
+      document.getElementById('players-section-title').textContent = `Players (${count})`;
+      document.getElementById('status-badge').textContent =
+        count === 0 ? '⏳ Waiting for players' :
+        count === 1 ? '🍾 1 player' :
+        `🍾 ${count} players`;
+
+      const btn = document.getElementById('start-btn');
+      if (gamePhase === 'lobby') {
+        btn.disabled = count === 0;
+        btn.textContent = count === 0 ? 'Waiting for Players…' : 'Start Shake! 🍾';
+      }
+
+      updateRoomPlayerCount();
+    }
+
+    function rebuildBottleGrid() {
+      const area = document.getElementById('players-area');
+      const peerIds = Object.keys(players);
+
+      if (peerIds.length === 0) {
+        area.innerHTML = `<div class="no-players-hint"><span class="hint-icon">🍾</span>No players yet!<br>Share the room code.</div>`;
+        return;
+      }
+
+      // Build grid HTML
+      area.innerHTML = `<div class="bottle-grid" id="bottle-grid">
+        ${peerIds.map(pid => {
+          const p = players[pid];
+          return `<div class="player-slot" data-peer-id="${pid}">
+            <div class="player-rank-tag" id="rank-${pid}"></div>
+            <div class="h-bottle-scene" id="bottle-${pid}">
+              <div class="h-jet-container">
+                <div class="h-jet-stream" id="jet-${pid}"></div>
+              </div>
+              <div class="h-cork" id="cork-${pid}"></div>
+              <div class="h-bottle-foil"></div>
+              <div class="h-bottle-neck"></div>
+              <div class="h-bottle-shoulder"></div>
+              <div class="h-bottle-body">
+                <div class="h-bottle-label">
+                  <span class="h-bottle-label-text">Champagne<br>Shake</span>
+                </div>
+              </div>
+            </div>
+            <div class="player-name-tag">${esc(p.name)}</div>
+            <div class="player-score-tag" id="score-${pid}"></div>
+          </div>`;
+        }).join('')}
+      </div>`;
+    }
+
+    // =====================
+    // GAME FLOW
+    // =====================
+    function startCountdown() {
+      gamePhase = 'countdown';
+      const btn = document.getElementById('start-btn');
+      btn.disabled = true;
+      btn.textContent = 'Get Ready…';
+
+      // Reset scores
+      Object.keys(players).forEach(pid => {
+        players[pid].score = 0;
+        players[pid].intensity = 0;
+      });
+
+      // Rebuild grid (clears old jets/ranks)
+      rebuildBottleGrid();
+
+      document.getElementById('results-banner').classList.add('hidden');
+      document.getElementById('timer-banner').classList.add('hidden');
+
+      let count = COUNTDOWN_SECS;
+      showHostCountdown(count);
+      broadcast({ type: 'countdown', count });
+
+      const iv = setInterval(() => {
+        count--;
+        if (count > 0) {
+          showHostCountdown(count);
+          broadcast({ type: 'countdown', count });
+        } else {
+          clearInterval(iv);
+          showHostCountdown(0); // "SHAKE!"
+          broadcast({ type: 'countdown', count: 0 });
+          setTimeout(() => startRound(), 800);
+        }
+      }, 1000);
+    }
+
+    function showHostCountdown(count) {
+      const overlay = document.getElementById('countdown-overlay');
+      const textEl  = document.getElementById('countdown-text');
+      overlay.classList.remove('hidden');
+      if (count > 0) {
+        textEl.className = 'countdown-number';
+        textEl.textContent = count;
+      } else {
+        textEl.className = 'countdown-number go-text';
+        textEl.textContent = 'SHAKE!';
+      }
+      textEl.style.animation = 'none';
+      textEl.offsetHeight;
+      textEl.style.animation = '';
+    }
+
+    function startRound() {
+      document.getElementById('countdown-overlay').classList.add('hidden');
+      gamePhase = 'shaking';
+      roundActive = true;
+      roundStartTime = Date.now();
+
+      const btn = document.getElementById('start-btn');
+      btn.disabled = true;
+      btn.textContent = '🍾 Shaking in progress…';
+
+      document.getElementById('timer-banner').classList.remove('hidden');
+      document.getElementById('status-badge').textContent = '🔥 SHAKING!';
+
+      broadcast({ type: 'go', duration: ROUND_DURATION });
+
+      // Timer update
+      timerInterval = setInterval(updateHostTimer, 100);
+
+      // Bottle animation loop
+      animateBottles();
+
+      // Auto-end
+      setTimeout(endRound, ROUND_DURATION);
+    }
+
+    function updateHostTimer() {
+      const elapsed = Date.now() - roundStartTime;
+      const remaining = Math.max(0, ROUND_DURATION - elapsed);
+      document.getElementById('host-timer').textContent = (remaining / 1000).toFixed(1);
+
+      // Update per-player scores
+      Object.keys(players).forEach(pid => {
+        const el = document.getElementById('score-' + pid);
+        if (el) el.textContent = Math.floor(players[pid].score);
+      });
+    }
+
+    function animateBottles() {
+      if (!roundActive) return;
+      Object.keys(players).forEach(pid => {
+        const bottle = document.getElementById('bottle-' + pid);
+        if (!bottle) return;
+        const intensity = Math.min(players[pid].intensity || 0, 30);
+        const dx = (Math.random() - 0.5) * intensity * 1.0;
+        const dy = (Math.random() - 0.5) * intensity * 0.6;
+        const rot = (Math.random() - 0.5) * intensity * 0.6;
+        bottle.style.transform = `translate(${dx}px, ${dy}px) rotate(${rot}deg)`;
+      });
+      shakeAnimFrame = requestAnimationFrame(animateBottles);
+    }
+
+    function endRound() {
+      roundActive = false;
+      gamePhase = 'results';
+      clearInterval(timerInterval);
+      cancelAnimationFrame(shakeAnimFrame);
+
+      document.getElementById('host-timer').textContent = '0.0';
+      document.getElementById('host-timer-label').textContent = "Time's up!";
+
+      // Reset bottle transforms
+      Object.keys(players).forEach(pid => {
+        const bottle = document.getElementById('bottle-' + pid);
+        if (bottle) bottle.style.transform = 'none';
+      });
+
+      // Build results
+      const results = Object.entries(players).map(([pid, p]) => ({
+        id: pid, name: p.name, score: p.score
+      }));
+      results.sort((a, b) => b.score - a.score);
+
+      broadcast({ type: 'times-up', results });
+
+      // Pop corks + jets (staggered for drama)
+      const maxScore = Math.max(...results.map(r => r.score), 1);
+      const rankIcons = ['🥇','🥈','🥉'];
+
+      results.forEach((r, i) => {
+        setTimeout(() => {
+          // Pop cork
+          const cork = document.getElementById('cork-' + r.id);
+          if (cork) cork.classList.add('popped');
+
+          // Jet
+          setTimeout(() => {
+            const norm = r.score / maxScore;
+            const jetHeight = 30 + norm * 180;
+            const jet = document.getElementById('jet-' + r.id);
+            if (jet) jet.style.height = jetHeight + 'px';
+
+            // Droplets
+            const bottle = document.getElementById('bottle-' + r.id);
+            if (bottle) spawnDroplets(bottle, 12 + Math.floor(norm * 10));
+          }, 300);
+
+          // Rank badge
+          const rankEl = document.getElementById('rank-' + r.id);
+          if (rankEl) rankEl.textContent = rankIcons[i] || '#' + (i + 1);
+        }, i * 200);
+      });
+
+      // Winner banner
+      setTimeout(() => {
+        if (results.length > 0) {
+          const winner = results[0];
+          document.getElementById('results-banner-icon').textContent = '🏆';
+          document.getElementById('results-banner-title').textContent = esc(winner.name) + ' wins!';
+          document.getElementById('results-banner-sub').textContent = 'Score: ' + Math.floor(winner.score);
+          document.getElementById('results-banner').classList.remove('hidden');
+
+          spawnConfetti();
+        }
+
+        document.getElementById('status-badge').textContent = '🏆 Round complete';
+        const btn = document.getElementById('start-btn');
+        btn.disabled = false;
+        btn.textContent = 'Play Again! 🔄';
+      }, results.length * 200 + 1500);
+    }
+
+    // =====================
+    // VISUAL EFFECTS
+    // =====================
+    function spawnDroplets(container, count) {
+      for (let i = 0; i < count; i++) {
+        const d = document.createElement('div');
+        d.className = 'droplet';
+        const dx = (Math.random() - 0.5) * 80;
+        const dy = -15 - Math.random() * 100;
+        const dur = 0.3 + Math.random() * 0.7;
+        d.style.setProperty('--dx', dx + 'px');
+        d.style.setProperty('--dy', dy + 'px');
+        d.style.setProperty('--dur', dur + 's');
+        d.style.left = '50%'; d.style.top = '0';
+        d.style.background = Math.random() > 0.5 ? '#f5d060' : '#fff8e8';
+        d.style.width = (2 + Math.random() * 5) + 'px';
+        d.style.height = d.style.width;
+        container.appendChild(d);
+        setTimeout(() => d.remove(), dur * 1000 + 100);
+      }
+    }
+
+    function spawnConfetti() {
+      const colors = ['#e8b830','#f5d060','#fff8e8','#4ade80','#60a5fa','#f87171','#a78bfa'];
+      for (let i = 0; i < 80; i++) {
+        const c = document.createElement('div');
+        c.className = 'confetti-piece';
+        c.style.left = Math.random() * 100 + 'vw';
+        c.style.top = -20 + 'px';
+        c.style.background = colors[Math.floor(Math.random() * colors.length)];
+        c.style.setProperty('--dur', (1.5 + Math.random() * 2) + 's');
+        c.style.setProperty('--rot', (Math.random() * 720 - 360) + 'deg');
+        c.style.animationDelay = Math.random() * 0.8 + 's';
+        c.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+        document.body.appendChild(c);
+        setTimeout(() => c.remove(), 4500);
+      }
+    }
+
+    // =====================
+    // HELPERS
+    // =====================
+    function esc(str) {
+      const d = document.createElement('div');
+      d.textContent = String(str ?? '');
+      return d.innerHTML;
+    }
+
+    // =====================
+    // EVENT LISTENERS
+    // =====================
+    document.getElementById('create-room-btn').addEventListener('click', () => {
+      const name = document.getElementById('room-name-input').value.trim();
+      if (!name) { document.getElementById('room-name-input').focus(); return; }
+      const btn = document.getElementById('create-room-btn');
+      btn.textContent = '⏳ Creating…';
+      btn.disabled = true;
+      initPeer((peerId) => createRoom(peerId));
+    });
+
+    document.getElementById('room-name-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('create-room-btn').click();
+    });
+
+    document.getElementById('start-btn').addEventListener('click', () => {
+      if (gamePhase === 'lobby' || gamePhase === 'results') {
+        startCountdown();
+      }
+    });
+  </script>
+</body>
+</html>

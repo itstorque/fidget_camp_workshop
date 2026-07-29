@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>🍾 Champagne Shake</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    html, body { height: 100%; overflow: hidden; background: #0a0a0a; }
+
+    .play-layout {
+      display: flex; flex-direction: column;
+      height: 100vh; height: 100dvh;
+      background: #0a0a0a; color: white;
+      font-family: 'Nunito', sans-serif;
+    }
+
+    .play-topbar {
+      background: #1a1a1a; padding: 10px 16px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0; border-bottom: 1px solid #333;
+    }
+    .play-topbar-title { font-size: 15px; font-weight: 900; }
+    .play-topbar-badge {
+      background: rgba(232,184,48,0.15); border-radius: 20px;
+      padding: 3px 12px; font-size: 13px; font-weight: 800;
+      color: #e8b830; max-width: 130px; overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap;
+    }
+
+    .play-middle {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      position: relative; overflow: hidden;
+      padding: 20px 16px;
+    }
+
+    /* ---------- TIMER ---------- */
+    .timer-display {
+      font-size: 64px; font-weight: 900;
+      color: #e8b830; text-align: center;
+      line-height: 1; margin-bottom: 8px;
+      text-shadow: 0 0 30px rgba(232,184,48,0.4);
+      font-variant-numeric: tabular-nums;
+    }
+    .timer-label {
+      font-size: 14px; font-weight: 800; color: #666;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      text-align: center; margin-bottom: 16px;
+    }
+
+    /* ---------- BOTTLE ---------- */
+    .bottle-scene {
+      position: relative; width: 120px;
+      display: flex; flex-direction: column; align-items: center;
+      transition: transform 0.05s linear;
+    }
+    .jet-container {
+      position: absolute; bottom: 100%; left: 50%;
+      transform: translateX(-50%); width: 30px;
+      pointer-events: none; overflow: visible;
+    }
+    .jet-stream {
+      width: 100%; height: 0;
+      background: linear-gradient(to top,
+        #e8b830 0%, #f5d060 20%, #fff8e8 50%,
+        rgba(255,248,232,0.4) 80%, transparent 100%);
+      border-radius: 40% 40% 0 0;
+      transition: height 1.8s cubic-bezier(0.22, 1.2, 0.36, 1);
+      position: relative;
+    }
+    .jet-stream::after {
+      content: ''; position: absolute; top: -10px;
+      left: -10px; right: -10px; height: 30px;
+      background: radial-gradient(ellipse, rgba(255,248,232,0.6) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+
+    .cork {
+      width: 22px; height: 18px;
+      background: linear-gradient(135deg, #c9a234 0%, #8B6914 100%);
+      border-radius: 3px 3px 5px 5px; margin-bottom: -2px;
+      position: relative; z-index: 2;
+      transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+    }
+    .cork.popped {
+      transform: translateY(-80px) rotate(45deg);
+      opacity: 0;
+    }
+
+    .bottle-foil {
+      width: 36px; height: 18px;
+      background: linear-gradient(135deg, #c9a234 0%, #f0d68a 50%, #c9a234 100%);
+      border-radius: 6px 6px 2px 2px; position: relative; z-index: 1;
+    }
+    .bottle-neck {
+      width: 26px; height: 50px;
+      background: linear-gradient(135deg, #1a472a 0%, #2d6b45 60%, #1a472a 100%);
+      position: relative;
+    }
+    .bottle-neck::after {
+      content: ''; position: absolute; top: 0; left: 3px;
+      width: 6px; height: 100%;
+      background: linear-gradient(to right, transparent, rgba(255,255,255,0.08), transparent);
+      border-radius: 4px;
+    }
+    .bottle-shoulder {
+      width: 26px; height: 0;
+      border-left: 16px solid transparent; border-right: 16px solid transparent;
+      border-top: 24px solid #1a472a;
+      /* creates trapezoid shape */
+    }
+    /* Use a simpler approach for the shoulder */
+    .bottle-body-wrap {
+      width: 80px; position: relative;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .bottle-shoulder-fill {
+      width: 80px; height: 28px;
+      background: linear-gradient(135deg, #1a472a 0%, #2d6b45 60%, #1a472a 100%);
+      border-radius: 12px 12px 0 0;
+      clip-path: polygon(22% 0%, 78% 0%, 100% 100%, 0% 100%);
+    }
+    .bottle-body {
+      width: 80px; height: 130px;
+      background: linear-gradient(135deg, #143a22 0%, #2d6b45 40%, #1a472a 80%, #143a22 100%);
+      border-radius: 0 0 10px 10px; position: relative; overflow: hidden;
+    }
+    .bottle-body::after {
+      content: ''; position: absolute; top: 0; left: 10px;
+      width: 12px; height: 100%;
+      background: linear-gradient(to right, transparent, rgba(255,255,255,0.06), transparent);
+      border-radius: 8px;
+    }
+    .bottle-label {
+      position: absolute; top: 20px; left: 8px; right: 8px;
+      height: 60px;
+      background: linear-gradient(135deg, #f5e6c8 0%, #e8d5a8 50%, #d4c090 100%);
+      border-radius: 4px; border: 1px solid #c9a234;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; padding: 4px;
+    }
+    .bottle-label-text {
+      font-size: 8px; font-weight: 900; color: #1a472a;
+      text-transform: uppercase; letter-spacing: 0.12em;
+      line-height: 1.3;
+    }
+    .bottle-label-year {
+      font-size: 11px; font-weight: 900; color: #8B6914;
+    }
+
+    /* ---------- SHAKE METER ---------- */
+    .shake-meter {
+      width: 100%; max-width: 260px;
+      margin-top: 20px;
+    }
+    .shake-meter-label {
+      font-size: 12px; font-weight: 800; color: #666;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      margin-bottom: 6px; text-align: center;
+    }
+    .shake-meter-track {
+      height: 14px; background: #1a1a1a;
+      border-radius: 10px; border: 2px solid #333;
+      overflow: hidden; position: relative;
+    }
+    .shake-meter-fill {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, #e8b830, #f5d060, #e8b830);
+      border-radius: 8px;
+      transition: width 0.15s ease-out;
+    }
+    .shake-score {
+      font-size: 22px; font-weight: 900; color: #e8b830;
+      text-align: center; margin-top: 8px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ---------- ENCOURAGEMENT ---------- */
+    .encouragement {
+      font-size: 18px; font-weight: 900;
+      color: #e8b830; text-align: center;
+      margin-top: 10px; min-height: 28px;
+      text-shadow: 0 0 20px rgba(232,184,48,0.3);
+    }
+
+    /* ---------- STATUS STRIP ---------- */
+    .status-strip {
+      flex-shrink: 0; padding: 10px 16px;
+      padding-bottom: max(10px, env(safe-area-inset-bottom));
+      background: #1a1a1a; border-top: 1px solid #333;
+      text-align: center; font-size: 13px; font-weight: 700; color: #666;
+    }
+    .status-strip.live { color: #4ade80; }
+    .status-strip.gold { color: #e8b830; }
+
+    /* ---------- COUNTDOWN OVERLAY ---------- */
+    .countdown-fullscreen {
+      position: fixed; inset: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.85);
+      pointer-events: none;
+    }
+    .countdown-fullscreen.hidden { display: none; }
+    .countdown-number {
+      font-size: 160px; font-weight: 900;
+      color: #e8b830;
+      text-shadow: 0 0 60px rgba(232,184,48,0.5);
+      animation: countPop 0.8s ease-out;
+    }
+    .countdown-number.go-text {
+      font-size: 72px;
+      background: linear-gradient(135deg, #e8b830, #f5d060);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    @keyframes countPop {
+      0% { transform: scale(2); opacity: 0; }
+      40% { transform: scale(0.9); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* ---------- RESULTS OVERLAY ---------- */
+    .results-overlay {
+      position: fixed; inset: 0; z-index: 90;
+      background: rgba(0,0,0,0.8);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 20px; text-align: center;
+    }
+    .results-overlay.hidden { display: none; }
+
+    .results-title {
+      font-size: 28px; font-weight: 900;
+      margin-bottom: 6px;
+    }
+    .results-subtitle {
+      font-size: 15px; font-weight: 700; color: #999;
+      margin-bottom: 24px;
+    }
+    .results-rank {
+      font-size: 72px; margin-bottom: 8px;
+    }
+    .results-score-line {
+      font-size: 18px; font-weight: 800; color: #e8b830;
+      margin-bottom: 24px;
+    }
+    .results-leaderboard {
+      width: 100%; max-width: 320px;
+      background: #1a1a1a; border-radius: 16px;
+      border: 2px solid #333; padding: 14px;
+      margin-bottom: 20px;
+    }
+    .lb-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 6px;
+      border-bottom: 1px solid #222;
+      font-weight: 700; font-size: 14px;
+    }
+    .lb-row:last-child { border-bottom: none; }
+    .lb-rank { width: 28px; text-align: center; font-size: 18px; }
+    .lb-name { flex: 1; color: #ccc; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .lb-score { color: #e8b830; font-variant-numeric: tabular-nums; }
+    .lb-row.you { background: rgba(232,184,48,0.1); border-radius: 8px; }
+
+    .results-btn {
+      background: rgba(232,184,48,0.15); border: 2px solid #e8b830;
+      color: #e8b830; border-radius: 14px;
+      padding: 12px 28px; font-size: 15px; font-weight: 800;
+      font-family: inherit; cursor: pointer;
+    }
+
+    /* ---------- PARTICLES ---------- */
+    .droplet {
+      position: absolute; width: 6px; height: 6px;
+      background: #f5d060; border-radius: 50%;
+      pointer-events: none;
+      animation: dropletFly var(--dur) ease-out forwards;
+      opacity: 0;
+    }
+    @keyframes dropletFly {
+      0% { transform: translate(0,0) scale(1); opacity: 1; }
+      100% { transform: translate(var(--dx), var(--dy)) scale(0.2); opacity: 0; }
+    }
+
+    .confetti-piece {
+      position: fixed; width: 8px; height: 14px;
+      pointer-events: none; z-index: 200;
+      animation: confettiFall var(--dur) ease-in forwards;
+    }
+    @keyframes confettiFall {
+      0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(100vh) rotate(var(--rot)); opacity: 0; }
+    }
+
+    /* ---------- WAITING STATE ---------- */
+    .waiting-content {
+      text-align: center; padding: 20px;
+    }
+    .waiting-bottle-small {
+      font-size: 80px; margin-bottom: 16px;
+      animation: gentleBob 2s ease-in-out infinite;
+    }
+    @keyframes gentleBob {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+    .waiting-text {
+      font-size: 18px; font-weight: 800; color: #ccc;
+      margin-bottom: 6px;
+    }
+    .waiting-subtext {
+      font-size: 14px; font-weight: 700; color: #666;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAME ENTRY -->
+  <div class="overlay center" id="name-overlay">
+    <div class="overlay-card">
+      <span class="overlay-icon">🍾</span>
+      <h2 class="overlay-title">Champagne Shake!</h2>
+      <p class="overlay-desc">Shake your phone to pop the cork!</p>
+      <input type="text" class="text-input" id="player-name-input"
+        placeholder="Your name" maxlength="20"
+        autocomplete="off" autocorrect="off" spellcheck="false">
+      <button class="btn btn-primary btn-full" id="join-btn">Join the Party! 🥂</button>
+    </div>
+  </div>
+
+  <!-- MOTION PERMISSION (iOS 13+) -->
+  <div class="overlay center hidden" id="permission-overlay">
+    <div class="overlay-card">
+      <span class="overlay-icon">📱</span>
+      <h2 class="overlay-title">Allow Motion?</h2>
+      <p class="overlay-desc">
+        We need your accelerometer to detect shaking.
+        Tap <strong>Allow</strong> when prompted.
+      </p>
+      <button class="btn btn-primary btn-full" id="permission-btn">Enable Sensors 📱</button>
+    </div>
+  </div>
+
+  <!-- CONNECTING -->
+  <div class="overlay center hidden" id="connecting-overlay">
+    <div class="overlay-card">
+      <span class="overlay-icon spinner">🌀</span>
+      <h2 class="overlay-title">Connecting...</h2>
+      <p class="overlay-desc" id="connecting-msg">Joining the room</p>
+    </div>
+  </div>
+
+  <!-- COUNTDOWN OVERLAY -->
+  <div class="countdown-fullscreen hidden" id="countdown-overlay">
+    <div class="countdown-number" id="countdown-text">3</div>
+  </div>
+
+  <!-- RESULTS OVERLAY -->
+  <div class="results-overlay hidden" id="results-overlay">
+    <div class="results-rank" id="results-rank-icon">🥇</div>
+    <div class="results-title" id="results-title">You Won!</div>
+    <div class="results-subtitle" id="results-subtitle">Champion shaker!</div>
+    <div class="results-score-line" id="results-score-line">Score: 0</div>
+    <div class="results-leaderboard" id="results-leaderboard"></div>
+    <button class="results-btn" id="results-dismiss-btn">Nice! 🍾</button>
+  </div>
+
+  <!-- MAIN PLAY UI -->
+  <div class="play-layout hidden" id="play-ui">
+    <div class="play-topbar">
+      <span class="play-topbar-title">🍾 Champagne Shake</span>
+      <span class="play-topbar-badge" id="topbar-name">You</span>
+    </div>
+
+    <div class="play-middle" id="play-middle">
+      <!-- Waiting state (shown before round starts) -->
+      <div id="waiting-state" class="waiting-content">
+        <div class="waiting-bottle-small">🍾</div>
+        <div class="waiting-text">Get Ready!</div>
+        <div class="waiting-subtext">Waiting for the host to start the round…</div>
+      </div>
+
+      <!-- Shaking state (shown during round) -->
+      <div id="shaking-state" style="display:none;width:100%;align-items:center;flex-direction:column" class="play-middle">
+        <div class="timer-display" id="timer-display">10</div>
+        <div class="timer-label" id="timer-label">seconds left</div>
+
+        <div class="bottle-scene" id="bottle-scene">
+          <div class="jet-container">
+            <div class="jet-stream" id="jet-stream"></div>
+          </div>
+          <div class="cork" id="cork"></div>
+          <div class="bottle-foil"></div>
+          <div class="bottle-neck"></div>
+          <div class="bottle-body-wrap">
+            <div class="bottle-shoulder-fill"></div>
+            <div class="bottle-body">
+              <div class="bottle-label">
+                <span class="bottle-label-text">Champagne<br>Shake</span>
+                <span class="bottle-label-year">2026</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="shake-meter" id="shake-meter">
+          <div class="shake-meter-label">Shake Power</div>
+          <div class="shake-meter-track">
+            <div class="shake-meter-fill" id="shake-meter-fill"></div>
+          </div>
+          <div class="shake-score" id="shake-score-display">0</div>
+        </div>
+
+        <div class="encouragement" id="encouragement"></div>
+      </div>
+    </div>
+
+    <div class="status-strip" id="status-strip">Waiting for host…</div>
+  </div>
+
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <script src="/config.js"></script>
+  <script src="/js/api-config.js"></script>
+  <script src="/js/device-stream.js"></script>
+  <script>
+    // =====================
+    // PARAMS
+    // =====================
+    const params = new URLSearchParams(location.search);
+    const hostPeerId = params.get('peer');
+    const roomId     = params.get('room');
+    if (!hostPeerId || !roomId) location.href = '/rooms?game=champagne-shake';
+
+    // =====================
+    // STATE
+    // =====================
+    const ROUND_DURATION = 10000;
+    let peer = null, hostConn = null, playerName = '';
+    let deviceStreamHandle = null;
+    let roundActive = false, roundStartTime = 0;
+    let shakeScore = 0, currentIntensity = 0;
+    let scoreInterval = null, timerInterval = null, shakeAnimFrame = null;
+
+    // =====================
+    // PEER CONNECTION
+    // =====================
+    function initPeer(name) {
+      playerName = name;
+      document.getElementById('topbar-name').textContent = name;
+      const peerConfig = getPeerConfig();
+      peer = new Peer(undefined, peerConfig);
+      peer.on('open', () => connectToHost());
+      peer.on('error', (err) => {
+        console.warn('PeerJS error:', err.type);
+        peer.destroy();
+        peer = new Peer(undefined, { debug: 0 });
+        peer.on('open', () => connectToHost());
+        peer.on('error', (e) => showFatalError('Could not connect: ' + e.type));
+      });
+    }
+
+    function connectToHost() {
+      showOverlay('connecting-overlay');
+      document.getElementById('connecting-msg').textContent = 'Joining room ' + (roomId || '…');
+      hostConn = peer.connect(hostPeerId, { reliable: true, serialization: 'json' });
+      const timeout = setTimeout(() => {
+        showFatalError('Could not reach host. Is the room still open?');
+      }, 10000);
+      hostConn.on('open', () => {
+        clearTimeout(timeout);
+        hostConn.send({ type: 'join', name: playerName });
+        requestSensorPermission();
+      });
+      hostConn.on('data', handleHostMsg);
+      hostConn.on('close', () => {});
+      hostConn.on('error', (err) => {
+        clearTimeout(timeout);
+        showFatalError('Connection error: ' + err);
+      });
+    }
+
+    // =====================
+    // HOST MESSAGES
+    // =====================
+    function handleHostMsg(data) {
+      if (data.type === 'countdown') {
+        showCountdown(data.count);
+      } else if (data.type === 'go') {
+        startShaking(data.duration || ROUND_DURATION);
+      } else if (data.type === 'times-up') {
+        endShaking(data.results || []);
+      }
+    }
+
+    // =====================
+    // SENSOR PERMISSION
+    // =====================
+    async function requestSensorPermission() {
+      const needsMotion = typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function';
+      const needsOrientation = typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function';
+      if (needsMotion || needsOrientation) {
+        showOverlay('permission-overlay');
+        document.getElementById('permission-btn').addEventListener('click', async () => {
+          try {
+            if (needsMotion) {
+              const r = await DeviceMotionEvent.requestPermission();
+              if (r !== 'granted') { showFatalError('Motion permission denied.'); return; }
+            }
+            if (needsOrientation) await DeviceOrientationEvent.requestPermission();
+            beginPlayUI();
+          } catch (e) { showFatalError('Sensor permission error: ' + e.message); }
+        }, { once: true });
+        return;
+      }
+      beginPlayUI();
+    }
+
+    // =====================
+    // MAIN UI
+    // =====================
+    function beginPlayUI() {
+      showOverlay(null);
+      document.getElementById('play-ui').classList.remove('hidden');
+
+      // Start streaming to server (for host polling), accumulate shake locally
+      deviceStreamHandle = startDeviceStreaming({
+        roomId,
+        deviceId: peer.id,
+        name: playerName,
+        onSample: (latest) => {
+          if (!roundActive) return;
+          const m = latest.motion;
+          const mag = Math.sqrt(m.x * m.x + m.y * m.y + m.z * m.z);
+          const excess = Math.max(0, mag - 9.8);
+          currentIntensity = excess;
+          shakeScore += excess * 0.05; // scale factor for ~200ms sampling
+        }
+      });
+
+      const strip = document.getElementById('status-strip');
+      strip.textContent = '🟢 Connected — waiting for host to start';
+      strip.classList.add('live');
+    }
+
+    // =====================
+    // COUNTDOWN
+    // =====================
+    function showCountdown(count) {
+      document.getElementById('waiting-state').style.display = 'none';
+      document.getElementById('shaking-state').style.display = 'none';
+      const overlay = document.getElementById('countdown-overlay');
+      const textEl  = document.getElementById('countdown-text');
+      overlay.classList.remove('hidden');
+      if (count > 0) {
+        textEl.className = 'countdown-number';
+        textEl.textContent = count;
+      } else {
+        textEl.className = 'countdown-number go-text';
+        textEl.textContent = 'SHAKE!';
+      }
+      // Force re-trigger animation
+      textEl.style.animation = 'none';
+      textEl.offsetHeight;
+      textEl.style.animation = '';
+      // Vibrate on each count
+      if (navigator.vibrate) navigator.vibrate(count > 0 ? 80 : 200);
+    }
+
+    // =====================
+    // SHAKE ROUND
+    // =====================
+    function startShaking(duration) {
+      document.getElementById('countdown-overlay').classList.add('hidden');
+      document.getElementById('waiting-state').style.display = 'none';
+      const shakingEl = document.getElementById('shaking-state');
+      shakingEl.style.display = 'flex';
+
+      roundActive = true;
+      roundStartTime = Date.now();
+      shakeScore = 0;
+      currentIntensity = 0;
+
+      const strip = document.getElementById('status-strip');
+      strip.textContent = '🍾 SHAKE IT!';
+      strip.className = 'status-strip gold';
+
+      // Timer countdown
+      updateTimer(duration);
+      timerInterval = setInterval(() => updateTimer(duration), 100);
+
+      // Score reporting to host
+      scoreInterval = setInterval(() => {
+        if (hostConn && hostConn.open) {
+          hostConn.send({ type: 'score-update', score: shakeScore, intensity: currentIntensity });
+        }
+      }, 200);
+
+      // Visual shake loop
+      animateBottle();
+    }
+
+    function updateTimer(duration) {
+      const elapsed = Date.now() - roundStartTime;
+      const remaining = Math.max(0, duration - elapsed);
+      const secs = (remaining / 1000).toFixed(1);
+      document.getElementById('timer-display').textContent = secs;
+
+      // Update shake meter (logarithmic scale, cap at ~500)
+      const pct = Math.min(100, (shakeScore / 500) * 100);
+      document.getElementById('shake-meter-fill').style.width = pct + '%';
+      document.getElementById('shake-score-display').textContent = Math.floor(shakeScore);
+
+      // Encouragement text
+      updateEncouragement();
+    }
+
+    function updateEncouragement() {
+      const el = document.getElementById('encouragement');
+      if (shakeScore < 30)       el.textContent = 'Shake harder!';
+      else if (shakeScore < 80)  el.textContent = 'Keep going! 💪';
+      else if (shakeScore < 160) el.textContent = 'Faster! 🔥';
+      else if (shakeScore < 300) el.textContent = 'AMAZING! 🚀';
+      else                       el.textContent = 'UNSTOPPABLE!! 🏆';
+    }
+
+    function animateBottle() {
+      if (!roundActive) return;
+      const bottle = document.getElementById('bottle-scene');
+      const intensity = Math.min(currentIntensity, 30);
+      const dx = (Math.random() - 0.5) * intensity * 1.2;
+      const dy = (Math.random() - 0.5) * intensity * 0.8;
+      const rot = (Math.random() - 0.5) * intensity * 0.8;
+      bottle.style.transform = `translate(${dx}px, ${dy}px) rotate(${rot}deg)`;
+      shakeAnimFrame = requestAnimationFrame(animateBottle);
+    }
+
+    // =====================
+    // END ROUND
+    // =====================
+    function endShaking(results) {
+      roundActive = false;
+      clearInterval(timerInterval);
+      clearInterval(scoreInterval);
+      cancelAnimationFrame(shakeAnimFrame);
+
+      // Send final score
+      if (hostConn && hostConn.open) {
+        hostConn.send({ type: 'score-update', score: shakeScore, intensity: 0 });
+      }
+
+      const bottle = document.getElementById('bottle-scene');
+      bottle.style.transform = 'none';
+      document.getElementById('timer-display').textContent = '0.0';
+
+      const strip = document.getElementById('status-strip');
+      strip.textContent = '⏱ Time\'s up!';
+      strip.className = 'status-strip';
+
+      if (navigator.vibrate) navigator.vibrate([100, 50, 200]);
+
+      // Pop cork and show jet
+      document.getElementById('cork').classList.add('popped');
+      setTimeout(() => {
+        const maxScore = Math.max(...results.map(r => r.score), shakeScore, 1);
+        const myNorm = shakeScore / maxScore;
+        const jetHeight = 40 + myNorm * 200;
+        document.getElementById('jet-stream').style.height = jetHeight + 'px';
+        spawnDroplets(document.getElementById('bottle-scene'), 20);
+      }, 400);
+
+      // Show results after jet animation
+      setTimeout(() => showResults(results), 2200);
+    }
+
+    function showResults(results) {
+      // Find our rank
+      const myId = peer.id;
+      // Make sure our score is in the results (use local score as fallback)
+      let found = results.find(r => r.id === myId);
+      if (!found) {
+        results.push({ id: myId, name: playerName, score: shakeScore });
+      } else {
+        // Use higher of local vs host-tracked score
+        found.score = Math.max(found.score, shakeScore);
+      }
+      results.sort((a, b) => b.score - a.score);
+
+      const myRank = results.findIndex(r => r.id === myId) + 1;
+      const total = results.length;
+
+      const rankIcons = ['🥇','🥈','🥉'];
+      document.getElementById('results-rank-icon').textContent = rankIcons[myRank - 1] || '🍾';
+
+      if (myRank === 1) {
+        document.getElementById('results-title').textContent = 'You Won!';
+        document.getElementById('results-subtitle').textContent = 'Champion shaker! 👑';
+        spawnConfetti();
+      } else {
+        document.getElementById('results-title').textContent = `#${myRank} of ${total}`;
+        document.getElementById('results-subtitle').textContent =
+          myRank === 2 ? 'So close!' :
+          myRank === 3 ? 'On the podium!' : 'Nice shaking!';
+      }
+
+      document.getElementById('results-score-line').textContent = 'Score: ' + Math.floor(shakeScore);
+
+      // Leaderboard
+      const lb = document.getElementById('results-leaderboard');
+      lb.innerHTML = results.slice(0, 8).map((r, i) => {
+        const isMe = r.id === myId;
+        const icon = rankIcons[i] || (i + 1);
+        return `<div class="lb-row${isMe ? ' you' : ''}">
+          <span class="lb-rank">${icon}</span>
+          <span class="lb-name">${esc(r.name)}${isMe ? ' (you)' : ''}</span>
+          <span class="lb-score">${Math.floor(r.score)}</span>
+        </div>`;
+      }).join('');
+
+      document.getElementById('results-overlay').classList.remove('hidden');
+    }
+
+    document.getElementById('results-dismiss-btn').addEventListener('click', () => {
+      document.getElementById('results-overlay').classList.add('hidden');
+      // Reset for next round
+      document.getElementById('cork').classList.remove('popped');
+      document.getElementById('jet-stream').style.height = '0';
+      document.getElementById('shake-meter-fill').style.width = '0%';
+      document.getElementById('shake-score-display').textContent = '0';
+      document.getElementById('encouragement').textContent = '';
+      document.getElementById('waiting-state').style.display = '';
+      document.getElementById('shaking-state').style.display = 'none';
+      const strip = document.getElementById('status-strip');
+      strip.textContent = '🟢 Waiting for next round…';
+      strip.className = 'status-strip live';
+    });
+
+    // =====================
+    // VISUAL EFFECTS
+    // =====================
+    function spawnDroplets(container, count) {
+      for (let i = 0; i < count; i++) {
+        const d = document.createElement('div');
+        d.className = 'droplet';
+        const dx = (Math.random() - 0.5) * 120;
+        const dy = -20 - Math.random() * 140;
+        const dur = 0.4 + Math.random() * 0.8;
+        d.style.setProperty('--dx', dx + 'px');
+        d.style.setProperty('--dy', dy + 'px');
+        d.style.setProperty('--dur', dur + 's');
+        d.style.left = '50%'; d.style.top = '0';
+        d.style.background = Math.random() > 0.5 ? '#f5d060' : '#fff8e8';
+        d.style.width = (3 + Math.random() * 6) + 'px';
+        d.style.height = d.style.width;
+        container.appendChild(d);
+        setTimeout(() => d.remove(), dur * 1000 + 100);
+      }
+    }
+
+    function spawnConfetti() {
+      const colors = ['#e8b830','#f5d060','#fff8e8','#4ade80','#60a5fa','#f87171','#a78bfa'];
+      for (let i = 0; i < 60; i++) {
+        const c = document.createElement('div');
+        c.className = 'confetti-piece';
+        c.style.left = Math.random() * 100 + 'vw';
+        c.style.top = -20 + 'px';
+        c.style.background = colors[Math.floor(Math.random() * colors.length)];
+        c.style.setProperty('--dur', (1.5 + Math.random() * 2) + 's');
+        c.style.setProperty('--rot', (Math.random() * 720 - 360) + 'deg');
+        c.style.animationDelay = Math.random() * 0.6 + 's';
+        c.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+        document.body.appendChild(c);
+        setTimeout(() => c.remove(), 4000);
+      }
+    }
+
+    // =====================
+    // HELPERS
+    // =====================
+    function showOverlay(id) {
+      document.querySelectorAll('.overlay').forEach(el => el.classList.add('hidden'));
+      if (id) document.getElementById(id).classList.remove('hidden');
+    }
+
+    function showFatalError(message) {
+      showOverlay(null);
+      document.getElementById('play-ui').classList.add('hidden');
+      alert(message);
+    }
+
+    function esc(s) {
+      const d = document.createElement('div');
+      d.textContent = String(s ?? '');
+      return d.innerHTML;
+    }
+
+    window.addEventListener('beforeunload', () => deviceStreamHandle?.stop());
+
+    // =====================
+    // NAME ENTRY
+    // =====================
+    document.getElementById('join-btn').addEventListener('click', () => {
+      const name = document.getElementById('player-name-input').value.trim();
+      if (!name) { document.getElementById('player-name-input').focus(); return; }
+      document.getElementById('name-overlay').classList.add('hidden');
+      initPeer(name);
+    });
+    document.getElementById('player-name-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('join-btn').click();
+    });
+  </script>
+</body>
+</html>

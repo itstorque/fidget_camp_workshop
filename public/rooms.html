@@ -90,6 +90,11 @@
     const GAME_ID = params.get('game') || 'gyroscope-test';
 
     const GAME_META = {
+      'test': {
+        name: 'test',
+        hostPath: '/games/test/host.html',
+        playPath: '/games/test/play.html'
+      },
       'gyroscope-test': {
         name: '🎯 Gyroscope Test',
         hostPath: '/games/gyroscope-test/host.html',
@@ -128,12 +133,7 @@
         const res = await fetch(apiUrl(`/api/rooms?game=${encodeURIComponent(GAME_ID)}`));
         if (!res.ok) throw new Error('Bad response');
         const rooms = await res.json();
-        // In local preview mode, also offer a synthetic dev room that drops
-        // straight into this game's host screen (streaming every device via
-        // /api/devices/all) alongside any real rooms open on the remote server.
-        renderRooms(isLocalPreview()
-          ? [{ roomId: 'DEV', name: '🧪 Local Dev Room', playerCount: 0, isDev: true }, ...rooms]
-          : rooms);
+        renderRooms(rooms);
       } catch (e) {
         document.getElementById('rooms-container').innerHTML = `
           <div class="error-state">
@@ -161,7 +161,7 @@
       countEl.textContent = `${rooms.length} room${rooms.length !== 1 ? 's' : ''}`;
 
       container.innerHTML = rooms.map(room => `
-        <div class="room-card" onclick="${room.isDev ? `location.href='${esc(meta?.hostPath || '/')}'` : `joinRoom('${esc(room.hostPeerId)}', '${esc(room.roomId)}')`}">
+        <div class="room-card" onclick="joinRoom('${esc(room.hostPeerId)}', '${esc(room.roomId)}')">
           <div style="flex:1;min-width:0">
             <div class="room-name">${esc(room.name)}</div>
             <div class="room-meta">
@@ -169,7 +169,7 @@
             </div>
           </div>
           <span class="room-player-count">👥 ${room.playerCount}</span>
-          <button class="btn btn-secondary" style="white-space:nowrap;padding:10px 16px">${room.isDev ? 'Open →' : 'Join →'}</button>
+          <button class="btn btn-secondary" style="white-space:nowrap;padding:10px 16px">Join →</button>
         </div>
       `).join('');
     }
